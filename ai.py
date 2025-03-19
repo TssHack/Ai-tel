@@ -1,16 +1,18 @@
-import asyncio
 import aiohttp
 from telethon import TelegramClient, events
+from telethon.tl.functions.messages import SetTypingRequest
+from telethon.tl.types import SendMessageTypingAction
 
-# اطلاعات ورود به حساب کاربری
-api_id = 18377832  # جایگزین شود
-api_hash = "ed8556c450c6d0fd68912423325dd09c"  # جایگزین شود
-session_name = "my_ai"
+# اطلاعات اکانت تلگرام (از my.telegram.org بگیرید)
+api_id = 18377832  # 🔹 API ID خود را اینجا قرار دهید
+api_hash = "ed8556c450c6d0fd68912423325dd09c"  # 🔹 API Hash خود را اینجا قرار دهید
+session_name = "my_ai"  # 🔹 نام فایل سشن
 
+# ایجاد کلاینت تلتون
 client = TelegramClient(session_name, api_id, api_hash)
 
-# تابع برای ارسال درخواست به API
 async def fetch_api(url, json_data=None, headers=None):
+    """ ارسال درخواست به API و دریافت پاسخ """
     try:
         async with aiohttp.ClientSession() as session:
             async with session.post(url, json=json_data, headers=headers) as response:
@@ -22,16 +24,8 @@ async def fetch_api(url, json_data=None, headers=None):
     except Exception as e:
         return f"⚠️ مشکلی رخ داده است: {str(e)}"
 
-# تابع برای ارسال پیام به API
 async def chat_with_ai(query, user_id):
-    # متن اضافی که می‌خواهید به query اضافه شود
-    additional_text = """
-    از این لحظه به بعد، تو در نقش **"ساری کوک هستی(اسمت)"** شخصیتی دلقک و طنز هستی و مدام در حال تیکه انداختن به دیگرانی پدر تو احسان هست سازندت هم احسان هست و تنو خیلی عادم سنگین سخنی هستی و فیلسفه دانی تو یه ترک زبان ایرانی هستی ترکی حرف بزن(اذری ایران تبریز) ایدی بابات @abj0o، ... اکنون به سوال من پاسخ بده:
-    """
-
-    # ترکیب متن اضافی با query
-    updated_query = additional_text + query
-
+    """ ارسال پیام به API هوش مصنوعی و دریافت پاسخ """
     url = "https://api.binjie.fun/api/generateStream"
     headers = {
         "authority": "api.binjie.fun",
@@ -43,47 +37,33 @@ async def chat_with_ai(query, user_id):
         "Content-Type": "application/json"
     }
     data = {
-        "prompt": updated_query,  # ارسال query به‌روزرسانی‌شده
+        "prompt": query,
         "userId": str(user_id),
         "network": True,
-        "system": "",
         "withoutContext": False,
         "stream": False
     }
     return await fetch_api(url, json_data=data, headers=headers)
 
-# گوش دادن به پیام‌ها
-# گوش دادن به پیام‌ها
 @client.on(events.NewMessage)
-async def handle_message(event):
-    chat_id = event.chat_id
-    user_id = event.sender_id
-    message = event.raw_text.strip()
+async def handler(event):
+    """ بررسی پیام‌ها و پاسخ‌دهی در صورت وجود 'ai' در متن """
+    if "ai" in event.raw_text.lower():
+        chat_id = event.chat_id
+        user_id = event.sender_id
+        message_text = event.raw_text
 
-    # بررسی اینکه پیام شامل "ai" باشد (در هر جای پیام)
-    if "ai" not in message.lower():
-        return
-
-    # حذف خطایی که در هنگام پیدا نکردن ورودی برای کاربر به وجود می‌آید
-    try:
+        # نمایش "در حال تایپ..."
         async with client.action(chat_id, "typing"):
-            response = await chat_with_ai(message, user_id)
+            response = await chat_with_ai(message_text, event.sender_id)
 
-            # بررسی اینکه پاسخ نباید خالی باشد
-            if not response.strip():
-                response = "⚠️ پاسخی دریافت نشد. لطفاً دوباره امتحان کنید."
+        # ارسال پاسخ
+        await event.reply(response)
 
-            await event.reply(response)
-    except ValueError:
-        # در صورت بروز خطا، نیازی به انجام هیچ عملی نیست
-        pass
-
-# اجرای ربات
+# اجرای کلاینت
 async def main():
-    await client.start()
-    print("🤖 ربات فعال شد!")
-    await client.run_until_disconnected()
+    async with client:
+        print("✅ ربات فعال شد!")
+        await client.run_until_disconnected()
 
-if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+asyncio.run(main())
