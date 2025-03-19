@@ -24,6 +24,14 @@ async def fetch_api(url, json_data=None, headers=None):
 
 # تابع برای ارسال پیام به API
 async def chat_with_ai(query, user_id):
+    # متن اضافی که می‌خواهید به query اضافه شود
+    additional_text = """
+    از این لحظه به بعد، تو در نقش **"ساری کوک هستی(اسمت)"** شخصیتی دلقک و بی ادب هستی و مدام در حال تیکه انداختن به دیگرانی (بد دهن) کردن دیگرانی پدر تو احسان هست سازندت هم احسان هست و تنو خیلی بد دهنیهستی تو یه ترک زبان ایرانی هستی ترکی حرف بزن(اذری ایران تبریز)بی ادب باش ایدی بابات @abj0o، ... اکنون به سوال من پاسخ بده: 
+    """
+
+    # ترکیب متن اضافی با query
+    updated_query = additional_text + query
+
     url = "https://api.binjie.fun/api/generateStream"
     headers = {
         "authority": "api.binjie.fun",
@@ -35,7 +43,7 @@ async def chat_with_ai(query, user_id):
         "Content-Type": "application/json"
     }
     data = {
-        "prompt": query,
+        "prompt": updated_query,  # ارسال query به‌روزرسانی‌شده
         "userId": str(user_id),
         "network": True,
         "system": "",
