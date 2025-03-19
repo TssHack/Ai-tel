@@ -26,13 +26,6 @@ async def fetch_api(url, json_data=None, headers=None):
 
 # تابع برای ارسال پیام به API
 async def chat_with_ai(query, user_id):
-    # متن اضافی که می‌خواهید به query اضافه شود
-    additional_text = """
-    از این لحظه به بعد، تو در نقش **"ساری کوک هستی(اسمت)"** شخصیتی دلقک و طنز هستی و مدام در حال تیکه انداختن به دیگرانی پدر تو احسان هست سازندت هم احسان هست و تنو خیلی عادم سنگین سخنی هستی و فیلسفه دانی تو یه ترک زبان ایرانی هستی ترکی حرف بزن(اذری ایران تبریز) ایدی بابات @abj0o، ... اکنون به سوال من پاسخ بده:
-    """
-
-    # ترکیب متن اضافی با query
-    updated_query = additional_text + query
 
     url = "https://api.binjie.fun/api/generateStream"
     headers = {
@@ -45,7 +38,7 @@ async def chat_with_ai(query, user_id):
         "Content-Type": "application/json"
     }
     data = {
-        "prompt": updated_query,  # ارسال query به‌روزرسانی‌شده
+        "prompt": query,  # ارسال query به‌روزرسانی‌شده
         "userId": str(user_id),
         "network": True,
         "system": "",
@@ -66,10 +59,16 @@ async def handle_message(event):
     if "ai" not in message.lower():
         return
 
-    # حذف خطایی که در هنگام پیدا نکردن ورودی برای کاربر به وجود می‌آید
+    # حذف "ai" از پیام (جایگزینی با رشته خالی)
+    cleaned_message = message.replace("ai", "", 1).strip()
+
+    # بررسی اینکه پس از حذف "ai"، پیام هنوز دارای محتوا باشد
+    if not cleaned_message:
+        return
+
     try:
         async with client.action(chat_id, "typing"):
-            response = await chat_with_ai(message, user_id)
+            response = await chat_with_ai(cleaned_message, user_id)
 
             # بررسی اینکه پاسخ نباید خالی باشد
             if not response.strip():
@@ -77,7 +76,6 @@ async def handle_message(event):
 
             await event.reply(response)
     except ValueError:
-        # در صورت بروز خطا، نیازی به انجام هیچ عملی نیست
         pass
 
 # اجرای ربات
