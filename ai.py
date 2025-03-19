@@ -94,5 +94,5 @@ async def main():
     await asyncio.sleep(2)  # مکث کوتاه برای اطمینان از ارسال پیام
     await app.run()  # جایگزین run_until_disconnected()
 
-if __name__ == "__main__":
-    asyncio.run(main())
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())
