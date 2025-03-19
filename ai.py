@@ -2,15 +2,14 @@ import asyncio
 import aiohttp
 from pyrogram import Client, filters
 
-# اطلاعات ورود به حساب کاربری
-api_id = 18377832  # جایگزین شود
-api_hash = "ed8556c450c6d0fd68912423325dd09c"  # جایگزین شود
-session_name = "my_ai"  # این مقدار می‌تواند نام فایل سشن باشد
+# اطلاعات ورود به حساب شخصی
+api_id = 18377832  # مقدار صحیح را جایگزین کن
+api_hash = "ed8556c450c6d0fd68912423325dd09c"
+session_name = "my_ai"
 
-# ساخت کلاینت Pyrogram
-app = Client(session_name, api_id, api_hash)
+app = Client(session_name, api_id, api_hash, is_bot=False)  # is_bot=False برای اکانت شخصی
 
-# تابع برای ارسال درخواست به API
+# تابع دریافت اطلاعات از API
 async def fetch_api(url, json_data=None, headers=None):
     try:
         async with aiohttp.ClientSession() as session:
@@ -23,16 +22,10 @@ async def fetch_api(url, json_data=None, headers=None):
     except Exception as e:
         return f"⚠️ مشکلی رخ داده است: {str(e)}"
 
-# تابع برای ارسال پیام به API هوش مصنوعی
+# تابع ارسال درخواست به AI
 async def chat_with_ai(query, user_id):
     url = "https://api.binjie.fun/api/generateStream"
     headers = {
-        "authority": "api.binjie.fun",
-        "accept": "application/json, text/plain, */*",
-        "accept-language": "en-US,en;q=0.9",
-        "origin": "https://chat18.aichatos.xyz",
-        "referer": "https://chat18.aichatos.xyz/",
-        "user-agent": "Mozilla/5.0 (Windows NT 6.3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
         "Content-Type": "application/json"
     }
     data = {
@@ -45,74 +38,50 @@ async def chat_with_ai(query, user_id):
     }
     return await fetch_api(url, json_data=data, headers=headers)
 
-# تابع دریافت فونت‌های مختلف برای متن انگلیسی
+# تابع تبدیل متن به فونت‌های مختلف
 async def convert_to_fonts(text):
     font_url = f"https://api.pamickweb.ir/API/FontEn.php?Text={text}"
-    
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.get(font_url, timeout=5) as response:
+            async with session.get(font_url) as response:
                 if response.status == 200:
                     fonts = await response.text()
-                    fonts_list = fonts.split("\n")  # جدا کردن فونت‌ها
-                    return "\n".join([f"`{font}`" for font in fonts_list])  # نمایش فونت‌ها به‌صورت کد
+                    fonts_list = fonts.strip().split("\n")
+                    return "\n".join([f"`{font}`" for font in fonts_list[:10]])  # فقط ۱۰ فونت اول را ارسال می‌کنیم
                 else:
-                    return "❌ خطا: نتوانستم فونت‌ها را دریافت کنم."
-    
-    except asyncio.TimeoutError:
-        return "⏳ سرور پاسخگو نیست، لطفاً بعداً امتحان کنید."
-    
-    except aiohttp.ClientError as e:
-        return f"⚠️ خطای اتصال: {e}"
+                    return "❌ خطا در دریافت فونت‌ها از سرور."
+    except Exception as e:
+        return f"⚠️ خطای اتصال: {str(e)}"
 
-# پردازش پیام‌های دریافتی
-@app.on_message(filters.text & ~filters.private)
+# بررسی پیام‌های گروهی
+@app.on_message(filters.text & filters.group)
 async def handle_message(client, message):
     chat_id = message.chat.id
     user_id = message.from_user.id
-    text = message.text.strip()
+    text = message.text.strip().lower()
 
-    # راهنما
-    if text.lower() == "راهنما":
-        help_text = (
-            "📌 **راهنمای ربات:**\n"
-            "🔹 در گروه‌ها فقط پیام‌هایی که شامل `ai` باشند پردازش می‌شوند.\n"
-            "🔹 برای دریافت فونت‌های یک متن انگلیسی، ابتدای پیام خود `font` بنویسید.\n"
-            "✍ نویسنده: @abj0o"
-        )
-        await message.reply(help_text)
+    # فقط پیام‌هایی که شامل "ai" هستند پردازش شوند
+    if "ai" in text:
+        async with app.action(chat_id, "typing"):
+            response = await chat_with_ai(text, user_id)
+            if not response.strip():
+                response = "⚠️ پاسخی دریافت نشد. لطفاً دوباره امتحان کنید."
+            await message.reply(response)
         return
 
-    # تبدیل متن به فونت‌های مختلف
-    if text.lower().startswith("font "):
-        query_text = text[5:].strip()
-        if not query_text:
-            await message.reply("❌ لطفاً یک متن انگلیسی بعد از `font` وارد کنید.")
-            return
-        
-        async with app.send_chat_action(chat_id, "typing"):
-            fonts = await convert_to_fonts(query_text)
-            await message.reply(fonts)
+    # اگر پیام با "font" شروع شود، متن را به فونت‌های مختلف تبدیل کن
+    if text.startswith("font "):
+        input_text = text[5:]  # حذف "font " از ابتدای متن
+        async with app.action(chat_id, "typing"):
+            response = await convert_to_fonts(input_text)
+            await message.reply(response)
         return
 
-    # فقط پیام‌هایی که شامل "ai" باشند پردازش شوند
-    if "ai" not in text.lower():
-        return
-
-    async with app.send_chat_action(chat_id, "typing"):
-        response = await chat_with_ai(text, user_id)
-
-        # بررسی اینکه پاسخ نباید خالی باشد
-        if not response.strip():
-            response = "⚠️ پاسخی دریافت نشد. لطفاً دوباره امتحان کنید."
-
-        await message.reply(response)
-
-# اجرای ربات
+# اجرای برنامه
 async def main():
-    async with app:
-        print("🤖 ربات فعال شد!")
-        await asyncio.Event().wait()
+    await app.start()
+    print("🤖 ربات با اکانت شخصی فعال شد!")
+    await app.run_until_disconnected()
 
 if __name__ == "__main__":
     asyncio.run(main())
