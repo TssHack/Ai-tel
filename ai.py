@@ -61,15 +61,15 @@ async def handle_message(event):
     message = event.raw_text.strip()
 
     # اگر فرستنده پیام کاربر موردنظر باشد، ری‌اکت 💔 بفرستد
-    if user_id == 5718655519:
+    #if user_id == 5718655519:
         # ارسال واکنش به پیام
-        await client(functions.messages.SendReactionRequest(
-            peer=event.chat_id,
-            msg_id=event.message.id,
-            reaction=[types.ReactionEmoji(emoticon='💔')]  # ایموجی واکنش
-        ))
+        #await client(functions.messages.SendReactionRequest(
+            #peer=event.chat_id,
+            #msg_id=event.message.id,
+            #reaction=[types.ReactionEmoji(emoticon='💔')]  # ایموجی واکنش
+        #))
 
-    # بررسی اینکه پیام شامل "ai" باشد
+    # from telethon import functions, typesبررسی اینکه پیام شامل "ai" باشد
     if "ai" not in message.lower():
         return
 
