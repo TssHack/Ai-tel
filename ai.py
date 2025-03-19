@@ -45,6 +45,7 @@ async def chat_with_ai(query, user_id):
     return await fetch_api(url, json_data=data, headers=headers)
 
 # گوش دادن به پیام‌ها
+# گوش دادن به پیام‌ها
 @client.on(events.NewMessage)
 async def handle_message(event):
     chat_id = event.chat_id
@@ -55,14 +56,19 @@ async def handle_message(event):
     if not message.lower().startswith("ai"):
         return
 
-    async with client.action(chat_id, "typing"):
-        response = await chat_with_ai(message, user_id)
+    # حذف خطایی که در هنگام پیدا نکردن ورودی برای کاربر به وجود می‌آید
+    try:
+        async with client.action(chat_id, "typing"):
+            response = await chat_with_ai(message, user_id)
 
-        # بررسی اینکه پاسخ نباید خالی باشد
-        if not response.strip():
-            response = "⚠️ پاسخی دریافت نشد. لطفاً دوباره امتحان کنید."
+            # بررسی اینکه پاسخ نباید خالی باشد
+            if not response.strip():
+                response = "⚠️ پاسخی دریافت نشد. لطفاً دوباره امتحان کنید."
 
-        await event.reply(response)
+            await event.reply(response)
+    except ValueError:
+        # در صورت بروز خطا، نیازی به انجام هیچ عملی نیست
+        pass
 
 # اجرای ربات
 async def main():
