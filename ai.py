@@ -1,6 +1,7 @@
 import asyncio
 import aiohttp
 from telethon import TelegramClient, events
+from telethon import functions, types
 from telethon.tl.functions.messages import SetTypingRequest
 from telethon.tl.types import SendMessageTypingAction
 
@@ -56,6 +57,8 @@ async def chat_with_ai(query, user_id):
 
 # گوش دادن به پیام‌ها
 # گوش دادن به پیام‌ها
+
+
 @client.on(events.NewMessage)
 async def handle_message(event):
     chat_id = event.chat_id
@@ -64,7 +67,12 @@ async def handle_message(event):
 
     # اگر فرستنده پیام کاربر موردنظر باشد، ری‌اکت 💔 بفرستد
     if user_id == 5718655519:
-        await event.client.send_reaction(event.chat_id, event.message.id, "💔")
+        # ارسال واکنش به پیام
+        await client(functions.messages.SendReactionRequest(
+            peer=event.chat_id,
+            msg_id=event.message.id,
+            reaction=[types.ReactionEmoji(emoticon='💔')]  # ایموجی واکنش
+        ))
 
     # بررسی اینکه پیام شامل "ai" باشد
     if "ai" not in message.lower():
