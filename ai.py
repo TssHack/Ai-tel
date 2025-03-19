@@ -26,7 +26,7 @@ async def fetch_api(url, json_data=None, headers=None):
         return f"⚠️ مشکلی رخ داده است: {str(e)}"
 
 # تابع ارسال درخواست به AI
- async def chat_with_ai(query, user_id):
+async def chat_with_ai(query, user_id):
     url = "https://api.binjie.fun/api/generateStream"
     headers = {
         "authority": "api.binjie.fun",
