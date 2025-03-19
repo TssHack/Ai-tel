@@ -92,7 +92,7 @@ async def main():
     print("🤖 ربات با اکانت شخصی فعال شد!")
     await app.send_message("me", "✅ ربات با موفقیت اجرا شد!")  # پیام تست به اکانت خودت بفرست
     await asyncio.sleep(2)  # مکث کوتاه برای اطمینان از ارسال پیام
-    await app.idle()  # جایگزین run_until_disconnected()
+    await app.run()  # جایگزین run_until_disconnected()
 
 if __name__ == "__main__":
     asyncio.run(main())
