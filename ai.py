@@ -54,7 +54,7 @@ async def chat_with_ai(query, user_id):
 
 # گوش دادن به پیام‌ها
 # گوش دادن به پیام‌ها
-@@client.on(events.NewMessage)
+@client.on(events.NewMessage)
 async def handle_message(event):
     chat_id = event.chat_id
     user_id = event.sender_id
