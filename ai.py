@@ -7,7 +7,7 @@ api_id = 18377832  # مقدار صحیح را جایگزین کن
 api_hash = "ed8556c450c6d0fd68912423325dd09c"
 session_name = "my_ai"
 
-app = Client(session_name, api_id, api_hash, is_bot=False)  # is_bot=False برای اکانت شخصی
+app = Client(session_name, api_id, api_hash)  # حذف is_bot  # is_bot=False برای اکانت شخصی
 
 # تابع دریافت اطلاعات از API
 async def fetch_api(url, json_data=None, headers=None):
