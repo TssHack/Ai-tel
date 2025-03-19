@@ -1,13 +1,16 @@
 import asyncio
-import aiohttp
 from pyrogram import Client, filters
+from pyrogram.types import Message
+from pyrogram.errors import FloodWait
+import aiohttp
+import time
 
 # اطلاعات ورود به حساب شخصی
 api_id = 18377832  # مقدار صحیح را جایگزین کن
 api_hash = "ed8556c450c6d0fd68912423325dd09c"
 session_name = "my_ai"
 
-app = Client(session_name, api_id, api_hash)  # حذف is_bot  # is_bot=False برای اکانت شخصی
+app = Client(session_name, api_id, api_hash)
 
 # تابع دریافت اطلاعات از API
 async def fetch_api(url, json_data=None, headers=None):
@@ -23,9 +26,15 @@ async def fetch_api(url, json_data=None, headers=None):
         return f"⚠️ مشکلی رخ داده است: {str(e)}"
 
 # تابع ارسال درخواست به AI
-async def chat_with_ai(query, user_id):
+ async def chat_with_ai(query, user_id):
     url = "https://api.binjie.fun/api/generateStream"
     headers = {
+        "authority": "api.binjie.fun",
+        "accept": "application/json, text/plain, */*",
+        "accept-language": "en-US,en;q=0.9",
+        "origin": "https://chat18.aichatos.xyz",
+        "referer": "https://chat18.aichatos.xyz/",
+        "user-agent": "Mozilla/5.0 (Windows NT 6.3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
         "Content-Type": "application/json"
     }
     data = {
@@ -39,7 +48,7 @@ async def chat_with_ai(query, user_id):
     return await fetch_api(url, json_data=data, headers=headers)
 
 # تابع تبدیل متن به فونت‌های مختلف
-async def convert_to_fonts(text):
+ async def convert_to_fonts(text):
     font_url = f"https://api.pamickweb.ir/API/FontEn.php?Text={text}"
     try:
         async with aiohttp.ClientSession() as session:
@@ -55,7 +64,7 @@ async def convert_to_fonts(text):
 
 # بررسی پیام‌های گروهی
 @app.on_message(filters.text & filters.group)
-async def handle_message(client, message):
+async def handle_message(client: Client, message: Message):
     chat_id = message.chat.id
     user_id = message.from_user.id
     text = message.text.strip().lower()
@@ -81,7 +90,9 @@ async def handle_message(client, message):
 async def main():
     await app.start()
     print("🤖 ربات با اکانت شخصی فعال شد!")
-    await app.run_until_disconnected()
+    await app.send_message("me", "✅ ربات با موفقیت اجرا شد!")  # پیام تست به اکانت خودت بفرست
+    await asyncio.sleep(2)  # مکث کوتاه برای اطمینان از ارسال پیام
+    await app.idle()  # جایگزین run_until_disconnected()
 
 if __name__ == "__main__":
     asyncio.run(main())
