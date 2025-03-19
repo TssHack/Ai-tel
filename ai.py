@@ -48,7 +48,7 @@ async def chat_with_ai(query, user_id):
     return await fetch_api(url, json_data=data, headers=headers)
 
 # تابع تبدیل متن به فونت‌های مختلف
- async def convert_to_fonts(text):
+async def convert_to_fonts(text):
     font_url = f"https://api.pamickweb.ir/API/FontEn.php?Text={text}"
     try:
         async with aiohttp.ClientSession() as session:
