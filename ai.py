@@ -109,11 +109,11 @@ async def handle_message(event):
     user_id = event.sender_id
     message = event.raw_text.strip()
 
-    if "mo" in message:
+    if "ehsan" in message:
         query = message.split("mo", 1)[1].strip()  # فقط متن بعد از "mo" پردازش شود
 
         if not query:
-            await event.reply("⚠️ لطفاً بعد از 'mo' یک عبارت جستجو وارد کنید.")
+            await event.reply("⚠️ لطفاً بعد از 'ehsan' یک عبارت جستجو وارد کنید.")
             return
 
         async with client.action(chat_id, "typing"):
