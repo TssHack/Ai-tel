@@ -50,6 +50,55 @@ async def chat_with_ai(query, user_id):
     }
     return await fetch_api(url, json_data=data, headers=headers)
 
+async def download_soundcloud_audio(track_url):
+    api_url = f"https://open.wiki-api.ir/apis-1/SoundcloudDownloader?url={track_url}"
+    
+    try:
+        response = requests.get(api_url)
+        if response.status_code != 200:
+            return None, "⚠️ خطا در دریافت اطلاعات از API"
+        
+        data = response.json()
+        if "results" not in data or "dlink" not in data["results"]:
+            return None, "⚠️ لینک دانلود پیدا نشد"
+        
+        # اطلاعات موزیک
+        audio_url = data["results"]["dlink"]
+        name = data["results"].get("name", "نامشخص")
+        artist = data["results"].get("artist", "نامشخص")
+        thumb_url = data["results"].get("thumb", None)  # لینک کاور آهنگ
+        
+        # دانلود فایل
+        filename = f"{name}.mp3"
+        audio_response = requests.get(audio_url, stream=True)
+        if audio_response.status_code == 200:
+            with open(filename, "wb") as file:
+                for chunk in audio_response.iter_content(chunk_size=1024):
+                    file.write(chunk)
+            return filename, name, artist, thumb_url
+        else:
+            return None, "⚠️ دانلود موزیک ناموفق بود"
+    
+    except Exception as e:
+        return None, f"⚠️ خطا: {str(e)}"
+
+async def search_soundcloud(query):
+    api_url = f"https://open.wiki-api.ir/apis-1/SoundcloudeSearch/?q={query}"
+    
+    try:
+        response = requests.get(api_url)
+        if response.status_code != 200:
+            return None, "⚠️ خطا در دریافت اطلاعات از API"
+        
+        data = response.json()
+        if "results" not in data or not data["results"]:
+            return None, "⚠️ هیچ نتیجه‌ای پیدا نشد!"
+        
+        return data["results"][:5]  # فقط ۵ نتیجه اول را برمی‌گرداند
+    
+    except Exception as e:
+        return None, f"⚠️ خطا: {str(e)}"
+
 # گوش دادن به پیام‌ها
 # گوش دادن به پیام‌ها
 
@@ -59,6 +108,59 @@ async def handle_message(event):
     chat_id = event.chat_id
     user_id = event.sender_id
     message = event.raw_text.strip()
+
+    if "mo" in message:
+        query = message.split("mo", 1)[1].strip()  # فقط متن بعد از "mo" پردازش شود
+
+        if not query:
+            await event.reply("⚠️ لطفاً بعد از 'mo' یک عبارت جستجو وارد کنید.")
+            return
+
+        async with client.action(chat_id, "typing"):
+            await event.reply(f"🔍 در حال جستجو برای: **{query}**...")
+
+            results = await search_soundcloud(query)
+
+            if not results:
+                await event.reply("🚫 نتیجه‌ای پیدا نشد!")
+                return
+
+            # ارسال هر کدام از ۵ نتیجه در یک پیام جداگانه
+            for result in results:
+                title = result.get("title", "بدون عنوان")
+                link = result.get("link", "بدون لینک")
+                img = result.get("img", None) if result.get("img") != "Not found" else None
+                description = result.get("description", "بدون توضیحات")
+
+                caption = f"🎵 **{title}**\n🔗 [لینک ساندکلاد]({link})\n📝 {description}"
+
+                if img:
+                    await client.send_file(chat_id, img, caption=caption)
+                else:
+                    await event.reply(caption)
+                    
+        return
+
+    if "soundcloud.com" in message:
+        async with client.action(chat_id, "record-audio"):
+            await event.reply("🎵 در حال دانلود موزیک از ساندکلاد... لطفاً صبر کنید.")
+
+            file_path, name, artist, thumb_url = await download_soundcloud_audio(message)
+
+            if file_path:
+                caption = f"🎶 **نام آهنگ:** {name}\n👤 **هنرمند:** {artist}\n🔗 [لینک اصلی]({message})"
+                
+                # **فعال کردن اکشن "در حال آپلود" هنگام ارسال موزیک**
+                async with client.action(chat_id, "upload_audio"):
+                    if thumb_url:
+                        await client.send_file(chat_id, file_path, caption=caption, thumb=thumb_url)
+                    else:
+                        await client.send_file(chat_id, file_path, caption=caption)
+
+                await event.reply("✅ موزیک ارسال شد!")
+            else:
+                await event.reply("🚫 دانلود موزیک با مشکل مواجه شد.")
+        return
 
     # اگر فرستنده پیام کاربر موردنظر باشد، ری‌اکت 💔 بفرستد
     #if user_id == 5718655519:
