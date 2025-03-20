@@ -123,27 +123,22 @@ async def handle_message(event):
 
     # دانلود آهنگ از SoundCloud
     if "soundcloud.com" in message:
-        async with client.action(chat_id, "record-audio"):
-            await event.reply("🎵 در حال دانلود موزیک... لطفاً صبر کنید.")
+    async with client.action(chat_id, "record-audio"):
+        await event.reply("🎵 در حال دانلود موزیک... لطفاً صبر کنید.")
 
-            file_path, name, artist, thumb_url = await download_soundcloud_audio(message)
+        file_path, _, _, _ = await download_soundcloud_audio(message)  # فقط فایل موزیک را دریافت کن
 
-            if not file_path:
-                await event.reply("🚫 دانلود موزیک با مشکل مواجه شد.")
-                return
+        if not file_path:
+            await event.reply("🚫 دانلود موزیک با مشکل مواجه شد.")
+            return
 
-            caption = f"🎶 **نام آهنگ:** {name}\n👤 **هنرمند:** {artist}\n🔗 [لینک اصلی]({message})"
-            caption = caption[:950] + "..." if len(caption) > 1000 else caption  # محدود کردن کپشن
+    # ارسال فایل بدون هیچ متنی
+    async with client.action(chat_id, "document"):
+        await client.send_file(chat_id, file_path)
 
-            async with client.action(chat_id, "document"):  # اصلاح action از "upload_audio" به "document"
-                if thumb_url:
-                    await client.send_file(chat_id, file_path, caption=caption, thumb=thumb_url)
-                else:
-                    await client.send_file(chat_id, file_path, caption=caption)
-
-            os.remove(file_path)  # حذف فایل پس از ارسال
-            await event.reply("✅ موزیک ارسال شد!")
-        return
+    # حذف فایل پس از ارسال
+    if os.path.exists(file_path):
+        os.remove(file_path)
 
     # ارسال پیام به هوش مصنوعی
     if "ai" in message.lower():
