@@ -50,11 +50,11 @@ async def download_soundcloud_audio(track_url):
     async with aiohttp.ClientSession() as session:
         async with session.get(api_url) as response:
             if response.status != 200:
-                return None, "⚠️ خطا در دریافت اطلاعات"
+                return None, None, None, None  # اصلاح مقدار بازگشتی
 
             data = await response.json()
             if "results" not in data or "dlink" not in data["results"]:
-                return None, "⚠️ لینک دانلود پیدا نشد"
+                return None, None, None, None  # اصلاح مقدار بازگشتی
 
             audio_url = data["results"]["dlink"]
             name = data["results"].get("name", "نامشخص")
@@ -68,7 +68,7 @@ async def download_soundcloud_audio(track_url):
                     with open(filename, "wb") as file:
                         file.write(await audio_response.read())
                     return filename, name, artist, thumb_url
-                return None, "⚠️ دانلود ناموفق بود"
+                return None, None, None, None  # اصلاح مقدار بازگشتی
 
 # جستجو در SoundCloud
 async def search_soundcloud(query):
@@ -110,7 +110,11 @@ async def handle_message(event):
                 img = result.get("img", None) if result.get("img") != "Not found" else None
                 description = result.get("description", "بدون توضیحات")
 
-                caption = f"🎵 **{title}**\n🔗 [لینک ساندکلاد]({link})\n📝 {description}"
+                caption = f"🎵 **{title}**\n🔗 [لینک ساندکلاد]({link})"
+
+                # محدود کردن متن کپشن به 1000 کاراکتر برای جلوگیری از خطای طولانی بودن کپشن
+                caption = caption[:950] + "..." if len(caption) > 1000 else caption
+
                 if img:
                     await client.send_file(chat_id, img, caption=caption)
                 else:
@@ -124,18 +128,21 @@ async def handle_message(event):
 
             file_path, name, artist, thumb_url = await download_soundcloud_audio(message)
 
-            if file_path:
-                caption = f"🎶 **نام آهنگ:** {name}\n👤 **هنرمند:** {artist}\n🔗 [لینک اصلی]({message})"
-                async with client.action(chat_id, "upload_audio"):
-                    if thumb_url:
-                        await client.send_file(chat_id, file_path, caption=caption, thumb=thumb_url)
-                    else:
-                        await client.send_file(chat_id, file_path, caption=caption)
-                
-                os.remove(file_path)  # حذف فایل پس از ارسال
-                await event.reply("✅ موزیک ارسال شد!")
-            else:
+            if not file_path:
                 await event.reply("🚫 دانلود موزیک با مشکل مواجه شد.")
+                return
+
+            caption = f"🎶 **نام آهنگ:** {name}\n👤 **هنرمند:** {artist}\n🔗 [لینک اصلی]({message})"
+            caption = caption[:950] + "..." if len(caption) > 1000 else caption  # محدود کردن کپشن
+
+            async with client.action(chat_id, "document"):  # اصلاح action از "upload_audio" به "document"
+                if thumb_url:
+                    await client.send_file(chat_id, file_path, caption=caption, thumb=thumb_url)
+                else:
+                    await client.send_file(chat_id, file_path, caption=caption)
+
+            os.remove(file_path)  # حذف فایل پس از ارسال
+            await event.reply("✅ موزیک ارسال شد!")
         return
 
     # ارسال پیام به هوش مصنوعی
@@ -148,6 +155,7 @@ async def handle_message(event):
             async with client.action(chat_id, "typing"):
                 response = await chat_with_ai(cleaned_message, user_id)
                 response = response.strip() if response and response.strip() else "⚠️ پاسخی دریافت نشد!"
+                response = response[:950] + "..." if len(response) > 1000 else response  # محدود کردن متن خروجی
                 await event.reply(response)
         except Exception as e:
             await event.reply(f"🚫 خطا در پردازش پیام: {str(e)}")
