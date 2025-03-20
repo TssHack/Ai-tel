@@ -1,35 +1,28 @@
 import asyncio
 import aiohttp
+import os
 from telethon import TelegramClient, events
-from telethon import functions, types
-from telethon.tl.functions.messages import SetTypingRequest
-from telethon.tl.types import SendMessageTypingAction
+from telethon.tl.functions.messages import SendReactionRequest
+from telethon.tl.types import ReactionEmoji
 
-# اطلاعات ورود به حساب کاربری
+# اطلاعات ورود به حساب تلگرام
 api_id = 18377832  # جایگزین شود
 api_hash = "ed8556c450c6d0fd68912423325dd09c"  # جایگزین شود
 session_name = "my_ai"
 
 client = TelegramClient(session_name, api_id, api_hash)
 
-# تابع برای ارسال درخواست به API
+# تابع درخواست به API
 async def fetch_api(url, json_data=None, headers=None):
     try:
         async with aiohttp.ClientSession() as session:
             async with session.post(url, json=json_data, headers=headers) as response:
-                if response.status == 200:
-                    return await response.text()
-                return f"⚠️ خطای سرور: {response.status}"
-    except aiohttp.ClientError as e:
-        return f"🚫 خطا در اتصال به سرور: {str(e)}"
+                return await response.text() if response.status == 200 else f"⚠️ خطای سرور: {response.status}"
     except Exception as e:
-        return f"⚠️ مشکلی رخ داده است: {str(e)}"
+        return f"🚫 خطا در اتصال: {str(e)}"
 
-# تابع برای ارسال پیام به API
+# چت با هوش مصنوعی
 async def chat_with_ai(query, user_id):
-    # متن اضافی که می‌خواهید به query اضافه شود
-    
-
     url = "https://api.binjie.fun/api/generateStream"
     headers = {
         "authority": "api.binjie.fun",
@@ -41,7 +34,7 @@ async def chat_with_ai(query, user_id):
         "Content-Type": "application/json"
     }
     data = {
-        "prompt": query,  # ارسال query به‌روزرسانی‌شده
+        "prompt": query,
         "userId": str(user_id),
         "network": True,
         "system": "",
@@ -50,82 +43,67 @@ async def chat_with_ai(query, user_id):
     }
     return await fetch_api(url, json_data=data, headers=headers)
 
+# دانلود موزیک از SoundCloud
 async def download_soundcloud_audio(track_url):
     api_url = f"https://open.wiki-api.ir/apis-1/SoundcloudDownloader?url={track_url}"
-    
-    try:
-        response = requests.get(api_url)
-        if response.status_code != 200:
-            return None, "⚠️ خطا در دریافت اطلاعات از API"
-        
-        data = response.json()
-        if "results" not in data or "dlink" not in data["results"]:
-            return None, "⚠️ لینک دانلود پیدا نشد"
-        
-        # اطلاعات موزیک
-        audio_url = data["results"]["dlink"]
-        name = data["results"].get("name", "نامشخص")
-        artist = data["results"].get("artist", "نامشخص")
-        thumb_url = data["results"].get("thumb", None)  # لینک کاور آهنگ
-        
-        # دانلود فایل
-        filename = f"{name}.mp3"
-        audio_response = requests.get(audio_url, stream=True)
-        if audio_response.status_code == 200:
-            with open(filename, "wb") as file:
-                for chunk in audio_response.iter_content(chunk_size=1024):
-                    file.write(chunk)
-            return filename, name, artist, thumb_url
-        else:
-            return None, "⚠️ دانلود موزیک ناموفق بود"
-    
-    except Exception as e:
-        return None, f"⚠️ خطا: {str(e)}"
 
+    async with aiohttp.ClientSession() as session:
+        async with session.get(api_url) as response:
+            if response.status != 200:
+                return None, "⚠️ خطا در دریافت اطلاعات"
+
+            data = await response.json()
+            if "results" not in data or "dlink" not in data["results"]:
+                return None, "⚠️ لینک دانلود پیدا نشد"
+
+            audio_url = data["results"]["dlink"]
+            name = data["results"].get("name", "نامشخص")
+            artist = data["results"].get("artist", "نامشخص")
+            thumb_url = data["results"].get("thumb", None)
+
+            # دانلود فایل
+            filename = f"{name}.mp3"
+            async with session.get(audio_url) as audio_response:
+                if audio_response.status == 200:
+                    with open(filename, "wb") as file:
+                        file.write(await audio_response.read())
+                    return filename, name, artist, thumb_url
+                return None, "⚠️ دانلود ناموفق بود"
+
+# جستجو در SoundCloud
 async def search_soundcloud(query):
     api_url = f"https://open.wiki-api.ir/apis-1/SoundcloudeSearch/?q={query}"
-    
-    try:
-        response = requests.get(api_url)
-        if response.status_code != 200:
-            return None, "⚠️ خطا در دریافت اطلاعات از API"
-        
-        data = response.json()
-        if "results" not in data or not data["results"]:
-            return None, "⚠️ هیچ نتیجه‌ای پیدا نشد!"
-        
-        return data["results"][:5]  # فقط ۵ نتیجه اول را برمی‌گرداند
-    
-    except Exception as e:
-        return None, f"⚠️ خطا: {str(e)}"
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(api_url) as response:
+            if response.status != 200:
+                return None, "⚠️ خطا در دریافت اطلاعات"
+
+            data = await response.json()
+            return data["results"][:5] if "results" in data and data["results"] else None, "⚠️ هیچ نتیجه‌ای یافت نشد!"
 
 # گوش دادن به پیام‌ها
-# گوش دادن به پیام‌ها
-
-
 @client.on(events.NewMessage)
 async def handle_message(event):
     chat_id = event.chat_id
     user_id = event.sender_id
     message = event.raw_text.strip()
 
-    if "ehsan" in message:
-        query = message.split("mo", 1)[1].strip()  # فقط متن بعد از "mo" پردازش شود
-
+    # جستجو در SoundCloud
+    if message.lower().startswith("ehsan "):
+        query = message[6:].strip()
         if not query:
-            await event.reply("⚠️ لطفاً بعد از 'ehsan' یک عبارت جستجو وارد کنید.")
+            await event.reply("⚠️ لطفاً بعد از 'ehsan' عبارت جستجو وارد کنید.")
             return
 
         async with client.action(chat_id, "typing"):
             await event.reply(f"🔍 در حال جستجو برای: **{query}**...")
 
-            results = await search_soundcloud(query)
-
+            results, error = await search_soundcloud(query)
             if not results:
-                await event.reply("🚫 نتیجه‌ای پیدا نشد!")
+                await event.reply(error)
                 return
 
-            # ارسال هر کدام از ۵ نتیجه در یک پیام جداگانه
             for result in results:
                 title = result.get("title", "بدون عنوان")
                 link = result.get("link", "بدون لینک")
@@ -133,66 +111,47 @@ async def handle_message(event):
                 description = result.get("description", "بدون توضیحات")
 
                 caption = f"🎵 **{title}**\n🔗 [لینک ساندکلاد]({link})\n📝 {description}"
-
                 if img:
                     await client.send_file(chat_id, img, caption=caption)
                 else:
                     await event.reply(caption)
-                    
         return
 
+    # دانلود آهنگ از SoundCloud
     if "soundcloud.com" in message:
         async with client.action(chat_id, "record-audio"):
-            await event.reply("🎵 در حال دانلود موزیک از ساندکلاد... لطفاً صبر کنید.")
+            await event.reply("🎵 در حال دانلود موزیک... لطفاً صبر کنید.")
 
             file_path, name, artist, thumb_url = await download_soundcloud_audio(message)
 
             if file_path:
                 caption = f"🎶 **نام آهنگ:** {name}\n👤 **هنرمند:** {artist}\n🔗 [لینک اصلی]({message})"
-                
-                # **فعال کردن اکشن "در حال آپلود" هنگام ارسال موزیک**
                 async with client.action(chat_id, "upload_audio"):
                     if thumb_url:
                         await client.send_file(chat_id, file_path, caption=caption, thumb=thumb_url)
                     else:
                         await client.send_file(chat_id, file_path, caption=caption)
-
+                
+                os.remove(file_path)  # حذف فایل پس از ارسال
                 await event.reply("✅ موزیک ارسال شد!")
             else:
                 await event.reply("🚫 دانلود موزیک با مشکل مواجه شد.")
         return
 
-    # اگر فرستنده پیام کاربر موردنظر باشد، ری‌اکت 💔 بفرستد
-    #if user_id == 5718655519:
-        # ارسال واکنش به پیام
-        #await client(functions.messages.SendReactionRequest(
-            #peer=event.chat_id,
-            #msg_id=event.message.id,
-            #reaction=[types.ReactionEmoji(emoticon='💔')]  # ایموجی واکنش
-        #))
+    # ارسال پیام به هوش مصنوعی
+    if "ai" in message.lower():
+        cleaned_message = message.replace("ai", "", 1).strip()
+        if not cleaned_message:
+            return
 
-    # from telethon import functions, typesبررسی اینکه پیام شامل "ai" باشد
-    if "ai" not in message.lower():
+        try:
+            async with client.action(chat_id, "typing"):
+                response = await chat_with_ai(cleaned_message, user_id)
+                response = response.strip() if response and response.strip() else "⚠️ پاسخی دریافت نشد!"
+                await event.reply(response)
+        except Exception as e:
+            await event.reply(f"🚫 خطا در پردازش پیام: {str(e)}")
         return
-
-    # حذف "ai" از پیام (فقط اولین مورد)
-    cleaned_message = message.replace("ai", "", 1).strip()
-
-    # بررسی اینکه پس از حذف "ai"، پیام هنوز دارای محتوا باشد
-    if not cleaned_message:
-        return
-
-    try:
-        async with client.action(chat_id, "typing"):
-            response = await chat_with_ai(cleaned_message, user_id)
-
-            # بررسی اینکه پاسخ نباید خالی باشد
-            if not response.strip():
-                response = "⚠️ پاسخی دریافت نشد. لطفاً دوباره امتحان کنید."
-
-            await event.reply(response)
-    except ValueError:
-        pass
 
 # اجرای ربات
 async def main():
@@ -201,5 +160,4 @@ async def main():
     await client.run_until_disconnected()
 
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+    asyncio.run(main())
