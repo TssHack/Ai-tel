@@ -12,6 +12,22 @@ session_name = "my_ai"
 
 client = TelegramClient(session_name, api_id, api_hash)
 
+# جستجو در دیوار
+async def search_divar(query, city="tabriz"):
+    api_url = f"https://open.wiki-api.ir/apis-1/SearchDivar?city={city}&q={query}"
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(api_url) as response:
+            if response.status != 200:
+                return None, "⚠️ خطا در دریافت اطلاعات از دیوار."
+
+            data = await response.json()
+
+            if "status" in data and data["status"] == True:
+                results = data["results"][:10]  # نمایش ۱۰ نتیجه اول
+                return results, None
+            return None, "⚠️ هیچ نتیجه‌ای یافت نشد!"
+
 # تابع درخواست به API
 async def fetch_api(url, json_data=None, headers=None):
     try:
@@ -154,6 +170,47 @@ async def handle_message(event):
                 await event.reply(response)
         except Exception as e:
             await event.reply(f"🚫 خطا در پردازش پیام: {str(e)}")
+        return
+
+# جستجو در دیوار
+if message.lower().startswith("divar "):
+    query = message[6:].strip()
+    if not query:
+        await event.reply("⚠️ لطفاً بعد از 'divar' عبارت جستجو وارد کنید.")
+        return
+
+    async with client.action(chat_id, "typing"):
+        await event.reply(f"🔍 در حال جستجو برای: **{query}** در دیوار...")
+
+        results, error = await search_divar(query)
+        if not results:
+            await event.reply(error)
+            return
+
+        for result in results:
+            title = result.get("title", "بدون عنوان")
+            description = result.get("description", "بدون توضیحات")
+            price = result.get("price", "بدون قیمت")
+            date = result.get("date", "بدون تاریخ")
+            link = result.get("link", "بدون لینک")
+            image = result.get("image", None)
+
+            # قالب‌بندی پیام
+            caption = f"📌 *{title}*\n" \
+                      f"📜 {description}\n" \
+                      f"💰 *قیمت:* {price}\n" \
+                      f"📍 *تاریخ:* {date}\n" \
+                      f"🔗 [مشاهده آگهی]({link})"
+
+            # محدود کردن طول پیام
+            caption = caption[:950] + "..." if len(caption) > 1000 else caption
+
+            # ارسال عکس یا پیام با لینک پیش‌نمایش
+            if image and image.startswith("http"):
+                await client.send_file(chat_id, image, caption=caption, reply_to=event.message.id)
+            else:
+                await event.reply(caption, link_preview=True, reply_to=event.message.id)
+
         return
 
 # اجرای ربات
