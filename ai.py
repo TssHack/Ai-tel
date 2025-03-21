@@ -117,7 +117,6 @@ async def send_image(chat_id, image_url, caption, reply_to_message_id=None):
     else:
         # ارسال تصویر با لینک به صورت مستقیم
         await client.send_file(chat_id, image_url, caption=caption, reply_to=reply_to_message_id)
-                    return
 
 # گوش دادن به پیام‌ها
 @client.on(events.NewMessage)
