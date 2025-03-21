@@ -1,7 +1,5 @@
 import asyncio
 import aiohttp
-from PIL import Image
-import io
 import os
 from telethon import TelegramClient, events
 from telethon.tl.functions.messages import SendReactionRequest
@@ -101,6 +99,7 @@ async def search_divar(query, city="tabriz"):
 
 # ارسال تصویر به همراه کپشن
 async def send_image(chat_id, image_url, caption, reply_to_message_id=None):
+    # تبدیل تصویر WebP به PNG
     if image_url and image_url.endswith(".webp"):
         async with aiohttp.ClientSession() as session:
             async with session.get(image_url) as response:
@@ -114,9 +113,9 @@ async def send_image(chat_id, image_url, caption, reply_to_message_id=None):
                     # ارسال تصویر PNG به تلگرام
                     await client.send_file(chat_id, png_image, caption=caption, reply_to=reply_to_message_id)
                     return
-    else:
-        # ارسال تصویر با لینک به صورت مستقیم
-        await client.send_file(chat_id, image_url, caption=caption, reply_to=reply_to_message_id)
+
+    # در صورتی که تصویر WebP نباشد، از همان لینک استفاده می‌کنیم
+    await client.send_file(chat_id, image_url, caption=caption, reply_to=reply_to_message_id)
 
 # گوش دادن به پیام‌ها
 @client.on(events.NewMessage)
