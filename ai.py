@@ -24,7 +24,7 @@ async def search_divar(query, city="tabriz"):
             data = await response.json()
 
             if "status" in data and data["status"] == True:
-                results = data["results"][:10]  # نمایش ۱۰ نتیجه اول
+                results = data["results"][:20]  # نمایش ۱۰ نتیجه اول
                 return results, None
             return None, "⚠️ هیچ نتیجه‌ای یافت نشد!"
 
