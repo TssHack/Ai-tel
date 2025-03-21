@@ -12,6 +12,22 @@ session_name = "my_ai"
 
 client = TelegramClient(session_name, api_id, api_hash)
 
+# جستجو در دیوار
+async def search_divar(query, city="tabriz"):
+    api_url = f"https://open.wiki-api.ir/apis-1/SearchDivar?city={city}&q={query}"
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(api_url) as response:
+            if response.status != 200:
+                return None, "⚠️ خطا در دریافت اطلاعات از دیوار."
+
+            data = await response.json()
+
+            if "status" in data and data["status"] == True:
+                results = data["results"][:10]  # نمایش ۱۰ نتیجه اول
+                return results, None
+            return None, "⚠️ هیچ نتیجه‌ای یافت نشد!"
+
 # تابع درخواست به API
 async def fetch_api(url, json_data=None, headers=None):
     try:
@@ -81,41 +97,6 @@ async def search_soundcloud(query):
 
             data = await response.json()
             return data["results"][:5] if "results" in data and data["results"] else None, "⚠️ هیچ نتیجه‌ای یافت نشد!"
-
-async def search_divar(query, city="tabriz"):
-    api_url = f"https://open.wiki-api.ir/apis-1/SearchDivar?city={city}&q={query}"
-
-    async with aiohttp.ClientSession() as session:
-        async with session.get(api_url) as response:
-            if response.status != 200:
-                return None, "⚠️ خطا در دریافت اطلاعات از دیوار."
-
-            data = await response.json()
-
-            if "status" in data and data["status"] == True:
-                results = data["results"][:10]  # نمایش ۱۰ نتیجه اول
-                return results, None
-            return None, "⚠️ هیچ نتیجه‌ای یافت نشد!"
-
-# ارسال تصویر به همراه کپشن
-async def send_image(chat_id, image_url, caption, reply_to_message_id=None):
-    # تبدیل تصویر WebP به PNG
-    if image_url and image_url.endswith(".webp"):
-        async with aiohttp.ClientSession() as session:
-            async with session.get(image_url) as response:
-                if response.status == 200:
-                    img_data = await response.read()
-                    img = Image.open(io.BytesIO(img_data))
-                    png_image = io.BytesIO()
-                    img.save(png_image, format='PNG')
-                    png_image.seek(0)  # بازنشانی موقعیت فایل به ابتدای آن
-
-                    # ارسال تصویر PNG به تلگرام
-                    await client.send_file(chat_id, png_image, caption=caption, reply_to=reply_to_message_id)
-                    return
-
-    # در صورتی که تصویر WebP نباشد، از همان لینک استفاده می‌کنیم
-    await client.send_file(chat_id, image_url, caption=caption, reply_to=reply_to_message_id)
 
 # گوش دادن به پیام‌ها
 @client.on(events.NewMessage)
@@ -225,11 +206,12 @@ async def handle_message(event):
                 caption = caption[:950] + "..." if len(caption) > 1000 else caption
 
                 # ارسال عکس یا پیام با لینک پیش‌نمایش
-                await send_image(chat_id, image, caption, reply_to_message_id=event.message.id)
+                if image and image.startswith("http"):
+                    await client.send_file(chat_id, image, caption=caption, reply_to=event.message.id)
+                else:
+                    await event.reply(caption, link_preview=True, reply_to=event.message.id)
 
         return
-
-    
 # اجرای ربات
 async def main():
     await client.start()
