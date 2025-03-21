@@ -1,5 +1,7 @@
 import asyncio
 import aiohttp
+from PIL import Image
+import io
 import os
 from telethon import TelegramClient, events
 from telethon.tl.functions.messages import SendReactionRequest
