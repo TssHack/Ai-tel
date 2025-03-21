@@ -207,8 +207,8 @@ async def handle_message(event):
 
             # ارسال عکس یا پیام با لینک پیش‌نمایش
                if image and image.startswith("http"):
-                   await client.send_file(chat_id, image, caption=caption, reply_to=event.message.id)
-               else:
+                    await client.send_file(chat_id, image, caption=caption, reply_to=event.message.id)
+                else:
                     await event.reply(caption, link_preview=True, reply_to=event.message.id)
 
         return
