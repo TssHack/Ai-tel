@@ -172,47 +172,46 @@ async def handle_message(event):
             await event.reply(f"🚫 خطا در پردازش پیام: {str(e)}")
         return
 
-# جستجو در دیوار
+    # جستجو در دیوار
     if message.lower().startswith("divar "):
-       query = message[6:].strip()
-       if not query:
-           await event.reply("⚠️ لطفاً بعد از 'divar' عبارت جستجو وارد کنید.")
-           return
+        query = message[6:].strip()
+        if not query:
+            await event.reply("⚠️ لطفاً بعد از 'divar' عبارت جستجو وارد کنید.")
+            return
 
-       async with client.action(chat_id, "typing"):
-           await event.reply(f"🔍 در حال جستجو برای: **{query}** در دیوار...")
+        async with client.action(chat_id, "typing"):
+            await event.reply(f"🔍 در حال جستجو برای: **{query}** در دیوار...")
 
-           results, error = await search_divar(query)
-           if not results:
-               await event.reply(error)
-               return
+            results, error = await search_divar(query)
+            if not results:
+                await event.reply(error)
+                return
 
-           for result in results:
-               title = result.get("title", "بدون عنوان")
-               description = result.get("description", "بدون توضیحات")
-               price = result.get("price", "بدون قیمت")
-               date = result.get("date", "بدون تاریخ")
-               link = result.get("link", "بدون لینک")
-               image = result.get("image", None)
+            for result in results:
+                title = result.get("title", "بدون عنوان")
+                description = result.get("description", "بدون توضیحات")
+                price = result.get("price", "بدون قیمت")
+                date = result.get("date", "بدون تاریخ")
+                link = result.get("link", "بدون لینک")
+                image = result.get("image", None)
 
-            # قالب‌بندی پیام
-               caption = f"📌 *{title}*\n" \
-                         f"📜 {description}\n" \
-                         f"💰 *قیمت:* {price}\n" \
-                         f"📍 *تاریخ:* {date}\n" \
-                         f"🔗 [مشاهده آگهی]({link})"
+                # قالب‌بندی پیام
+                caption = f"📌 *{title}*\n" \
+                          f"📜 {description}\n" \
+                          f"💰 *قیمت:* {price}\n" \
+                          f"📍 *تاریخ:* {date}\n" \
+                          f"🔗 [مشاهده آگهی]({link})"
 
-            # محدود کردن طول پیام
-               caption = caption[:950] + "..." if len(caption) > 1000 else caption
+                # محدود کردن طول پیام
+                caption = caption[:950] + "..." if len(caption) > 1000 else caption
 
-            # ارسال عکس یا پیام با لینک پیش‌نمایش
-               if image and image.startswith("http"):
+                # ارسال عکس یا پیام با لینک پیش‌نمایش
+                if image and image.startswith("http"):
                     await client.send_file(chat_id, image, caption=caption, reply_to=event.message.id)
                 else:
                     await event.reply(caption, link_preview=True, reply_to=event.message.id)
 
         return
-
 # اجرای ربات
 async def main():
     await client.start()
