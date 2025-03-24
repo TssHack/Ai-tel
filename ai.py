@@ -13,6 +13,8 @@ session_name = "my_ai"
 
 client = TelegramClient(session_name, api_id, api_hash)
 
+robot_status = True
+
 async def fetch_instagram_data(url):
     """ دریافت اطلاعات از API اینستاگرام """
     async with aiohttp.ClientSession() as session:
@@ -171,9 +173,25 @@ async def search_soundcloud(query):
             data = await response.json()
             return data["results"][:5] if "results" in data and data["results"] else None, "⚠️ هیچ نتیجه‌ای یافت نشد!"
 
+@client.on(events.NewMessage(pattern='/on'))
+async def on_handler(event):
+    global robot_status
+    robot_status = True
+    await event.reply("🤖 ربات روشن شد!")
+
+@client.on(events.NewMessage(pattern='/off'))
+async def off_handler(event):
+    global robot_status
+    robot_status = False
+    await event.reply("🤖 ربات خاموش شد!")
+
 # گوش دادن به پیام‌ها
 @client.on(events.NewMessage)
 async def handle_message(event):
+    if not robot_status:
+        # اگر ربات خاموش باشد، هیچ پاسخی ارسال نمی‌شود
+        return
+        
     chat_id = event.chat_id
     user_id = event.sender_id
     message = event.raw_text.strip()
