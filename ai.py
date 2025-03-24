@@ -16,54 +16,64 @@ client = TelegramClient(session_name, api_id, api_hash)
 
 async def process_link(url):
     api_url = f"https://pp-don.onrender.com/?url={url}"  # آدرس API جدید
-    
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(api_url) as response:
-                data = await response.json()
-        
-        if data.get("code") == 200 and "data" in data:
-            video_data = data["data"]
-            title = video_data.get("title", "بدون عنوان")
-            image = video_data.get("image", "")
+    max_retries = 3  # تعداد دفعات تلاش مجدد
+
+    for attempt in range(max_retries):
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(api_url) as response:
+                    data = await response.json()
             
-            # استخراج کیفیت‌ها به ترتیب
-            qualities = video_data.get("video_quality", [])
-            sorted_qualities = sorted(qualities, key=lambda q: q['type'])
+            if data.get("code") == 200 and "data" in data:
+                video_data = data["data"]
+                title = video_data.get("title", "بدون عنوان")
+                image = video_data.get("image", "")
+                
+                # استخراج کیفیت‌ها به ترتیب
+                qualities = video_data.get("video_quality", [])
+                sorted_qualities = sorted(qualities, key=lambda q: q['type'])
 
-            result = f"🎥 **{title}**\n\n🔗 **لینک‌ها:**\n<pre style=\"caret-color: rgb(255, 255, 255); color: rgb(255, 255, 255); font-style: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: auto; text-align: start; text-indent: 0px; text-transform: none; widows: auto; word-spacing: 0px; -webkit-tap-highlight-color: rgba(26, 26, 26, 0.3); -webkit-text-size-adjust: auto; -webkit-text-stroke-width: 0px; text-decoration: none; overflow-wrap: break-word; white-space: pre-wrap;\">"
-            
-            # نمایش لینک‌ها با کیفیت‌های مختلف
-            quality_links = {
-                "240p": None,
-                "480p": None,
-                "720p": None,
-                "1080p": None
-            }
+                result = f"🎥 **{title}**\n\n🔗 **لینک‌ها:**\n"
+                
+                # نمایش لینک‌ها با کیفیت‌های مختلف
+                quality_links = {
+                    "240p": None,
+                    "480p": None,
+                    "720p": None,
+                    "1080p": None
+                }
 
-            # مرتب کردن کیفیت‌ها بر اساس اولویت 240p, 480p, 720p, 1080p
-            for quality in sorted_qualities:
-                if quality['type'] == "426x240" and not quality_links["240p"]:
-                    quality_links["240p"] = f"🔹 **240p**: {quality['url']}"
-                elif quality['type'] == "854x480" and not quality_links["480p"]:
-                    quality_links["480p"] = f"🔹 **480p**: {quality['url']}"
-                elif quality['type'] == "1280x720" and not quality_links["720p"]:
-                    quality_links["720p"] = f"🔹 **720p**: {quality['url']}"
-                elif quality['type'] == "1920x1080" and not quality_links["1080p"]:
-                    quality_links["1080p"] = f"🔹 **1080p**: {quality['url']}"
+                # مرتب کردن کیفیت‌ها بر اساس اولویت 240p, 480p, 720p, 1080p
+                for quality in sorted_qualities:
+                    if quality['type'] == "426x240" and not quality_links["240p"]:
+                        quality_links["240p"] = f"🔹 **240p**: {quality['url']}"
+                    elif quality['type'] == "854x480" and not quality_links["480p"]:
+                        quality_links["480p"] = f"🔹 **480p**: {quality['url']}"
+                    elif quality['type'] == "1280x720" and not quality_links["720p"]:
+                        quality_links["720p"] = f"🔹 **720p**: {quality['url']}"
+                    elif quality['type'] == "1920x1080" and not quality_links["1080p"]:
+                        quality_links["1080p"] = f"🔹 **1080p**: {quality['url']}"
 
-            for quality, link in quality_links.items():
-                if link:
-                    result += f"{link}\n"
+                for quality, link in quality_links.items():
+                    if link:
+                        result += f"{link}\n"
+                    else:
+                        result += f"❌ لینک با کیفیت {quality} موجود نیست.\n"
+
+                return result, image
+            elif data.get("code") == 600:
+                # خطای 600: "Something is wrong, please try again!"
+                if attempt < max_retries - 1:
+                    continue  # تلاش مجدد
                 else:
-                    result += f"❌ لینک با کیفیت {quality} موجود نیست.\n"
-
-            result += "</pre>"
-            return result, image
-        else:
-            return "❌ پردازش لینک با خطا مواجه شد.", None
-    except Exception as e:
-        return f"❌ خطا در پردازش: {str(e)}", None
+                    return "❌ پردازش لینک با خطا مواجه شد. لطفاً دوباره تلاش کنید.", None
+            else:
+                return "❌ پردازش لینک با خطا مواجه شد.", None
+        except Exception as e:
+            if attempt < max_retries - 1:
+                continue  # تلاش مجدد
+            else:
+                return f"❌ خطا در پردازش: {str(e)}", None
 
 # جستجو در دیوار
 async def search_divar(query, city="tabriz"):
