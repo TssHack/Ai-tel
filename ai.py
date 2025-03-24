@@ -177,13 +177,13 @@ async def search_soundcloud(query):
 async def on_handler(event):
     global robot_status
     robot_status = True
-    await event.reply("🤖 ربات روشن شد!")
+    await event.message.edit("🤖 ربات روشن شد!")
 
 @client.on(events.NewMessage(pattern='/off'))
 async def off_handler(event):
     global robot_status
     robot_status = False
-    await event.reply("🤖 ربات خاموش شد!")
+    await event.message.edit("🤖 ربات خاموش شد!")
 
 # گوش دادن به پیام‌ها
 @client.on(events.NewMessage)
