@@ -46,13 +46,13 @@ async def process_link(url):
                 # مرتب کردن کیفیت‌ها بر اساس اولویت 240p, 480p, 720p, 1080p
                 for quality in sorted_qualities:
                     if quality['type'] == "426x240" and not quality_links["240p"]:
-                        quality_links["240p"] = f"🔹 **240p**: {quality['url']}"
+                        quality_links["240p"] = f"🔹 **240p**: [لینک 240p]({quality['url']})"
                     elif quality['type'] == "854x480" and not quality_links["480p"]:
-                        quality_links["480p"] = f"🔹 **480p**: {quality['url']}"
+                        quality_links["480p"] = f"🔹 **480p**: [لینک 480p]({quality['url']})"
                     elif quality['type'] == "1280x720" and not quality_links["720p"]:
-                        quality_links["720p"] = f"🔹 **720p**: {quality['url']}"
+                        quality_links["720p"] = f"🔹 **720p**: [لینک 720p]({quality['url']})"
                     elif quality['type'] == "1920x1080" and not quality_links["1080p"]:
-                        quality_links["1080p"] = f"🔹 **1080p**: {quality['url']}"
+                        quality_links["1080p"] = f"🔹 **1080p**: [لینک 1080p]({quality['url']})"
 
                 for quality, link in quality_links.items():
                     if link:
