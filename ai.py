@@ -24,19 +24,6 @@ async def fetch_instagram_data(url):
             print(f"خطا در دریافت اطلاعات اینستاگرام: {e}")
     return None
 
-async def download_file(url, filename):
-    """ دانلود فایل از لینک داده شده """
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, headers={"User-Agent": "Mozilla/5.0"}) as response:
-                if response.status == 200:
-                    async with aiofiles.open(filename, "wb") as file:
-                        await file.write(await response.read())
-                    return filename
-    except Exception as e:
-        print(f"خطا در دانلود فایل: {e}")
-    return None
-
 async def process_link(url):
     api_url = f"https://pp-don.onrender.com/?url={url}"  # آدرس API جدید
     max_retries = 3  # تعداد دفعات تلاش مجدد
@@ -216,11 +203,11 @@ async def handle_message(event):
                 if media_url and media_type:
                     # برای ویدیو
                     if media_type == "video":
-                        download_link = media_url
+                        download_link = f'<a href="{media_url}">دانلود</a>'
                         media_files.append(f"برای دانلود ویدیو روی لینک زیر کلیک کنید:\n{download_link}")
                     # برای عکس
                     elif media_type == "photo":
-                        download_link = media_url
+                        download_link = f'<a href="{media_url}">دانلود</a>'
                         media_files.append(f"برای دانلود عکس روی لینک زیر کلیک کنید:\n{download_link}")
                     else:
                         continue  # اگر نوع ناشناخته بود، رد کن
@@ -228,7 +215,7 @@ async def handle_message(event):
             # ارسال لینک‌های دانلود به صورت جداگانه
             if media_files:
                 for file_link in media_files:
-                    await client.send_message(event.chat_id, file_link)
+                    await client.send_message(event.chat_id, file_link, parse_mode="html")
 
         return
 
