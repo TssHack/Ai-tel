@@ -1,4 +1,5 @@
 import asyncio
+import uuid
 import re
 import aiohttp
 import os
@@ -14,20 +15,27 @@ session_name = "my_ai"
 client = TelegramClient(session_name, api_id, api_hash)
 
 async def fetch_instagram_data(url):
+    """ دریافت اطلاعات از API اینستاگرام """
     async with aiohttp.ClientSession() as session:
-        async with session.get(f"https://insta-donn.onrender.com/ehsan?url={url}") as response:
-            if response.status == 200:
-                return await response.json()
-            return None
+        try:
+            async with session.get(f"https://insta-donn.onrender.com/ehsan?url={url}") as response:
+                if response.status == 200:
+                    return await response.json()
+        except Exception as e:
+            print(f"خطا در دریافت اطلاعات اینستاگرام: {e}")
+    return None
 
-# تابع دانلود فایل
 async def download_file(url, filename):
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as response:
-            if response.status == 200:
-                with open(filename, "wb") as file:
-                    file.write(await response.read())
-                return filename
+    """ دانلود فایل از لینک داده شده """
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, headers={"User-Agent": "Mozilla/5.0"}) as response:
+                if response.status == 200:
+                    async with aiofiles.open(filename, "wb") as file:
+                        await file.write(await response.read())
+                    return filename
+    except Exception as e:
+        print(f"خطا در دانلود فایل: {e}")
     return None
 
 async def process_link(url):
@@ -183,7 +191,59 @@ async def handle_message(event):
     chat_id = event.chat_id
     user_id = event.sender_id
     message = event.raw_text.strip()
-    text = event.text
+    text = event.message.text
+    
+    if not text:
+        return
+
+    # **تشخیص لینک اینستاگرام**
+    insta_pattern = r'https?://(www\.)?instagram\.com/[^\s"\']+'
+    insta_links = re.findall(insta_pattern, text)
+
+    if not insta_links:
+        return
+    
+    insta_link = insta_links[0]  # اولین لینک را پردازش کن
+
+    # نمایش اکشن "در حال پردازش..."
+    async with client.action(event.chat_id, "typing"):
+        data = await fetch_instagram_data(insta_link)
+
+    if not data or "data" not in data:
+        await event.reply("❌ مشکلی در دریافت اطلاعات از اینستاگرام پیش آمد.")
+        return
+
+    media_files = []  # ذخیره لیست فایل‌های دانلود شده
+
+    for item in data["data"]:
+        media_url = item.get("media")
+        media_type = item.get("type")
+
+        if media_url and media_type:
+            unique_id = uuid.uuid4().hex  # تولید نام تصادفی
+            if media_type == "photo":
+                filename = f"insta_{unique_id}.jpg"
+                action_type = "photo"
+            elif media_type == "video":
+                filename = f"insta_{unique_id}.mp4"
+                action_type = "video"
+            else:
+                continue  # نوع نامعتبر رد شود
+
+            # نمایش اکشن دانلود مناسب
+            async with client.action(event.chat_id, action_type):
+                downloaded_file = await download_file(media_url, filename)
+
+            if downloaded_file:
+                media_files.append(downloaded_file)
+
+    # ارسال همه فایل‌ها
+    if media_files:
+        for file in media_files:
+            await client.send_file(event.chat_id, file)
+            os.remove(file)  # حذف فایل بعد از ارسال
+    else:
+        await event.reply("❌ فایل معتبری برای ارسال یافت نشد.")
 
     # جستجو در SoundCloud
     if message.lower().startswith("ehsan "):
@@ -312,50 +372,7 @@ async def handle_message(event):
         return
 
     # اگر پیام متنی نداشت، بیخیال شو
-    if not text:
-        return
-
-    # **تشخیص لینک اینستاگرام داخل هندلر**
-    insta_pattern = r'https?://(www\.)?instagram\.com/\S+'
-    insta_match = re.search(insta_pattern, text)
-
-    if insta_match:
-        insta_link = insta_match.group(0)  # لینک اینستاگرام رو از متن استخراج کن
-
-        # نمایش اکشن "در حال پردازش..."
-        async with client.action(event.chat_id, "typing"):
-            data = await fetch_instagram_data(insta_link)
-
-        if data and "data" in data:
-            media_files = []  # لیستی برای ذخیره فایل‌های دانلود شده
-
-            for item in data["data"]:
-                media_url = item.get("media")
-                media_type = item.get("type")  # نوع محتوا: photo یا video
-                
-                if media_url and media_type:
-                    if media_type == "photo":
-                        filename = "insta_photo.jpg"
-                        action_type = "photo"
-                    elif media_type == "video":
-                        filename = "insta_video.mp4"
-                        action_type = "video"
-                    else:
-                        continue  # اگر نوع ناشناخته بود، رد کن
-
-                    # نمایش اکشن دانلود مناسب
-                    async with client.action(event.chat_id, action_type):
-                        downloaded_file = await download_file(media_url, filename)
-
-                    if downloaded_file:
-                        media_files.append(downloaded_file)
-
-            # ارسال همه فایل‌ها به صورت ریپلای
-            if media_files:
-                for file in media_files:
-                    await client.send_file(event.chat_id, file)
-                    os.remove(file)  # حذف فایل‌ها بعد از ارسال
-        return
+    
 
 async def main():
     await client.start()
