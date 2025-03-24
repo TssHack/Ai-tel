@@ -339,7 +339,7 @@ async def handle_message(event):
                         action_type = "upload_photo"
                     elif media_type == "video":
                         filename = "insta_video.mp4"
-                        action_type = "upload_video"
+                        action_type = "upload_document"
                     else:
                         continue  # اگر نوع ناشناخته بود، رد کن
 
