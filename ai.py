@@ -336,10 +336,10 @@ async def handle_message(event):
                 if media_url and media_type:
                     if media_type == "photo":
                         filename = "insta_photo.jpg"
-                        action_type = "upload_photo"
+                        action_type = "photo"
                     elif media_type == "video":
                         filename = "insta_video.mp4"
-                        action_type = "upload_document"
+                        action_type = "video"
                     else:
                         continue  # اگر نوع ناشناخته بود، رد کن
 
@@ -352,8 +352,8 @@ async def handle_message(event):
 
             # ارسال همه فایل‌ها به صورت ریپلای
             if media_files:
-                await event.reply(file=media_files)
                 for file in media_files:
+                    await client.send_file(event.chat_id, file)
                     os.remove(file)  # حذف فایل‌ها بعد از ارسال
         return
 
