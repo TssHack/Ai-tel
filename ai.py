@@ -192,7 +192,7 @@ async def handle_message(event):
     user_id = event.sender_id
     message = event.raw_text.strip()
     text = event.message.text
-    
+
     if not text:
         return
 
@@ -204,10 +204,13 @@ async def handle_message(event):
         return
     
     insta_link = insta_links[0]  # اولین لینک را پردازش کن
+    print(f"🔗 Instagram URL: {insta_link}")
 
     # نمایش اکشن "در حال پردازش..."
     async with client.action(event.chat_id, "typing"):
         data = await fetch_instagram_data(insta_link)
+
+    print("🔹 API Response:", data)  # بررسی خروجی API
 
     if not data or "data" not in data:
         await event.reply("❌ مشکلی در دریافت اطلاعات از اینستاگرام پیش آمد.")
@@ -220,22 +223,21 @@ async def handle_message(event):
         media_type = item.get("type")
 
         if media_url and media_type:
+            print(f"📥 Downloading: {media_url} (Type: {media_type})")
             unique_id = uuid.uuid4().hex  # تولید نام تصادفی
-            if media_type == "photo":
-                filename = f"insta_{unique_id}.jpg"
-                action_type = "photo"
-            elif media_type == "video":
-                filename = f"insta_{unique_id}.mp4"
-                action_type = "video"
-            else:
-                continue  # نوع نامعتبر رد شود
+
+            filename = f"insta_{unique_id}.{'jpg' if media_type == 'photo' else 'mp4'}"
+            action_type = "photo" if media_type == "photo" else "video"
 
             # نمایش اکشن دانلود مناسب
             async with client.action(event.chat_id, action_type):
                 downloaded_file = await download_file(media_url, filename)
 
-            if downloaded_file:
-                media_files.append(downloaded_file)
+            if not downloaded_file:
+                print(f"⚠️ دانلود ناموفق: {media_url}")
+                continue
+
+            media_files.append(downloaded_file)
 
     # ارسال همه فایل‌ها
     if media_files:
