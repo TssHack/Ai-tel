@@ -13,12 +13,6 @@ session_name = "my_ai"
 
 client = TelegramClient(session_name, api_id, api_hash)
 
-def find_instagram_link(text):
-    pattern = r'https?://(www\.)?instagram\.com/\S+'
-    matches = re.findall(pattern, text)
-    return matches[0] if matches else None
-
-# تابع دریافت داده از API
 async def fetch_instagram_data(url):
     async with aiohttp.ClientSession() as session:
         async with session.get(f"https://insta-donn.onrender.com/ehsan?url={url}") as response:
@@ -26,7 +20,7 @@ async def fetch_instagram_data(url):
                 return await response.json()
             return None
 
-# تابع دانلود فایل از لینک اینستاگرام
+# تابع دانلود فایل
 async def download_file(url, filename):
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
@@ -35,7 +29,6 @@ async def download_file(url, filename):
                     file.write(await response.read())
                 return filename
     return None
-
 
 async def process_link(url):
     api_url = f"https://pp-don.onrender.com/?url={url}"  # آدرس API جدید
@@ -190,6 +183,7 @@ async def handle_message(event):
     chat_id = event.chat_id
     user_id = event.sender_id
     message = event.raw_text.strip()
+    text = event.text
 
     # جستجو در SoundCloud
     if message.lower().startswith("ehsan "):
@@ -317,24 +311,42 @@ async def handle_message(event):
 
         return
 
-async def handle_instagram_links(event):
-    if not event.text:
+    # اگر پیام متنی نداشت، بیخیال شو
+    if not text:
         return
 
-    insta_link = find_instagram_link(event.text)
-    if insta_link:
-        data = await fetch_instagram_data(insta_link)
+    # **تشخیص لینک اینستاگرام داخل هندلر**
+    insta_pattern = r'https?://(www\.)?instagram\.com/\S+'
+    insta_match = re.search(insta_pattern, text)
+
+    if insta_match:
+        insta_link = insta_match.group(0)  # لینک اینستاگرام رو از متن استخراج کن
+
+        # نمایش اکشن "در حال پردازش..."
+        async with client.action(event.chat_id, "typing"):
+            data = await fetch_instagram_data(insta_link)
 
         if data and "data" in data:
             media_files = []  # لیستی برای ذخیره فایل‌های دانلود شده
 
             for item in data["data"]:
                 media_url = item.get("media")
-                if media_url:
-                    file_ext = "jpg" if item["type"] == "photo" else "mp4"
-                    filename = f"insta_media.{file_ext}"
+                media_type = item.get("type")  # نوع محتوا: photo یا video
+                
+                if media_url and media_type:
+                    if media_type == "photo":
+                        filename = "insta_photo.jpg"
+                        action_type = "upload_photo"
+                    elif media_type == "video":
+                        filename = "insta_video.mp4"
+                        action_type = "upload_video"
+                    else:
+                        continue  # اگر نوع ناشناخته بود، رد کن
 
-                    downloaded_file = await download_file(media_url, filename)
+                    # نمایش اکشن دانلود مناسب
+                    async with client.action(event.chat_id, action_type):
+                        downloaded_file = await download_file(media_url, filename)
+
                     if downloaded_file:
                         media_files.append(downloaded_file)
 
@@ -342,8 +354,9 @@ async def handle_instagram_links(event):
             if media_files:
                 await event.reply(file=media_files)
                 for file in media_files:
-                    os.remove(file)
-# اجرای ربات
+                    os.remove(file)  # حذف فایل‌ها بعد از ارسال
+        return
+
 async def main():
     await client.start()
     print("🤖 ربات فعال شد!")
