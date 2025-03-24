@@ -197,13 +197,13 @@ async def handle_message(event):
         return
 
     # **تشخیص لینک اینستاگرام**
-    insta_pattern = r'https?://(www\.)?instagram\.com/[^\s"\']+'
-    insta_links = re.findall(insta_pattern, text)
+    insta_pattern = r'https?://(?:www\.)?instagram\.com/[^\s]+'
+    insta_match = re.search(insta_pattern, text)
 
-    if not insta_links:
+    if not insta_match:
         return
     
-    insta_link = insta_links[0]  # اولین لینک را پردازش کن
+    insta_link = insta_match.group(0)
     print(f"🔗 Instagram URL: {insta_link}")
 
     # نمایش اکشن "در حال پردازش..."
