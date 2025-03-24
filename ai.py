@@ -203,8 +203,8 @@ async def handle_message(event):
                 if media_url and media_type:
                     # برای ویدیو
                     if media_type == "video":
-                        download_link = f'<a href="{media_url}">دانلود</a>'
-                        media_files.append(f"برای دانلود ویدیو روی لینک زیر کلیک کنید:\n{download_link}")
+                        download_link = f'<a href="{media_url}">دانلود مستقیم</a>'
+                        media_files.append("{download_link}")
                     # برای عکس
                     elif media_type == "photo":
                         download_link = f'<a href="{media_url}">دانلود</a>'
@@ -215,7 +215,7 @@ async def handle_message(event):
             # ارسال لینک‌های دانلود به صورت جداگانه
             if media_files:
                 for file_link in media_files:
-                    await client.send_message(event.chat_id, file_link, parse_mode="html")
+                    await event.reply(file_link, parse_mode="html")
 
         return
 
