@@ -18,7 +18,7 @@ async def fetch_instagram_data(url):
     """ دریافت اطلاعات از API اینستاگرام """
     async with aiohttp.ClientSession() as session:
         try:
-            async with session.get(f"https://insta-donn.onrender.com/ehsan?url={url}") as response:
+            async with session.get(f"https://insta-tgfv.onrender.com/ehsan?url={url}") as response:
                 if response.status == 200:
                     return await response.json()
         except Exception as e:
