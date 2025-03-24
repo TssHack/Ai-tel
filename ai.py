@@ -195,20 +195,18 @@ async def handle_message(event):
     if not text:
         return
 
-    # **تشخیص لینک اینستاگرام**
-    insta_pattern = r'https?://(?:www\.)?instagram\.com/[^\s]+'
+    # **تشخیص لینک اینستاگرام داخل هندلر**
+    insta_pattern = r'https?://(www\.)?instagram\.com/\S+'
     insta_match = re.search(insta_pattern, text)
 
-    if not insta_match:
-        return
-    
-    insta_link = insta_match.group(0)
+    if insta_match:
+        insta_link = insta_match.group(0)  # لینک اینستاگرام رو از متن استخراج کن
 
-    # نمایش اکشن "در حال پردازش..."
-    async with client.action(event.chat_id, "typing"):
-        data = await fetch_instagram_data(insta_link)
+        # نمایش اکشن "در حال پردازش..."
+        async with client.action(event.chat_id, "typing"):
+            data = await fetch_instagram_data(insta_link)
 
-    if data and "data" in data:
+        if data and "data" in data:
             media_files = []  # لیستی برای ذخیره لینک‌های دانلود
 
             for item in data["data"]:
