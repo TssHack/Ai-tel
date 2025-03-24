@@ -204,7 +204,7 @@ async def handle_message(event):
                     # برای ویدیو
                     if media_type == "video":
                         download_link = f'<a href="{media_url}">دانلود مستقیم</a>'
-                        media_files.append("{download_link}")
+                        media_files.append(f"{download_link}")
                     # برای عکس
                     elif media_type == "photo":
                         download_link = f'<a href="{media_url}">دانلود</a>'
