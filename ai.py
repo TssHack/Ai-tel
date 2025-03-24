@@ -1,5 +1,4 @@
 import asyncio
-import uuid
 import re
 import aiohttp
 import os
@@ -204,48 +203,36 @@ async def handle_message(event):
         return
     
     insta_link = insta_match.group(0)
-    print(f"🔗 Instagram URL: {insta_link}")
 
     # نمایش اکشن "در حال پردازش..."
     async with client.action(event.chat_id, "typing"):
         data = await fetch_instagram_data(insta_link)
 
-    print("🔹 API Response:", data)  # بررسی خروجی API
+    if data and "data" in data:
+            media_files = []  # لیستی برای ذخیره لینک‌های دانلود
 
-    if not data or "data" not in data:
-        await event.reply("❌ مشکلی در دریافت اطلاعات از اینستاگرام پیش آمد.")
+            for item in data["data"]:
+                media_url = item.get("media")
+                media_type = item.get("type")  # نوع محتوا: photo یا video
+                
+                if media_url and media_type:
+                    # برای ویدیو
+                    if media_type == "video":
+                        download_link = media_url
+                        media_files.append(f"برای دانلود ویدیو روی لینک زیر کلیک کنید:\n{download_link}")
+                    # برای عکس
+                    elif media_type == "photo":
+                        download_link = media_url
+                        media_files.append(f"برای دانلود عکس روی لینک زیر کلیک کنید:\n{download_link}")
+                    else:
+                        continue  # اگر نوع ناشناخته بود، رد کن
+
+            # ارسال لینک‌های دانلود به صورت جداگانه
+            if media_files:
+                for file_link in media_files:
+                    await client.send_message(event.chat_id, file_link)
+
         return
-
-    media_files = []  # ذخیره لیست فایل‌های دانلود شده
-
-    for item in data["data"]:
-        media_url = item.get("media")
-        media_type = item.get("type")
-
-        if media_url and media_type:
-            print(f"📥 Downloading: {media_url} (Type: {media_type})")
-            unique_id = uuid.uuid4().hex  # تولید نام تصادفی
-
-            filename = f"insta_{unique_id}.{'jpg' if media_type == 'photo' else 'mp4'}"
-            action_type = "photo" if media_type == "photo" else "video"
-
-            # نمایش اکشن دانلود مناسب
-            async with client.action(event.chat_id, action_type):
-                downloaded_file = await download_file(media_url, filename)
-
-            if not downloaded_file:
-                print(f"⚠️ دانلود ناموفق: {media_url}")
-                continue
-
-            media_files.append(downloaded_file)
-
-    # ارسال همه فایل‌ها
-    if media_files:
-        for file in media_files:
-            await client.send_file(event.chat_id, file)
-            os.remove(file)  # حذف فایل بعد از ارسال
-    else:
-        await event.reply("❌ فایل معتبری برای ارسال یافت نشد.")
 
     # جستجو در SoundCloud
     if message.lower().startswith("ehsan "):
