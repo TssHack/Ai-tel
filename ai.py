@@ -13,6 +13,29 @@ session_name = "my_ai"
 
 client = TelegramClient(session_name, api_id, api_hash)
 
+def find_instagram_link(text):
+    pattern = r'https?://(www\.)?instagram\.com/\S+'
+    matches = re.findall(pattern, text)
+    return matches[0] if matches else None
+
+# تابع دریافت داده از API
+async def fetch_instagram_data(url):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f"https://insta-donn.onrender.com/ehsan?url={url}") as response:
+            if response.status == 200:
+                return await response.json()
+            return None
+
+# تابع دانلود فایل از لینک اینستاگرام
+async def download_file(url, filename):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status == 200:
+                with open(filename, "wb") as file:
+                    file.write(await response.read())
+                return filename
+    return None
+
 
 async def process_link(url):
     api_url = f"https://pp-don.onrender.com/?url={url}"  # آدرس API جدید
@@ -293,6 +316,33 @@ async def handle_message(event):
                     await event.reply(caption, link_preview=True, reply_to=event.message.id)
 
         return
+
+async def handle_instagram_links(event):
+    if not event.text:
+        return
+
+    insta_link = find_instagram_link(event.text)
+    if insta_link:
+        data = await fetch_instagram_data(insta_link)
+
+        if data and "data" in data:
+            media_files = []  # لیستی برای ذخیره فایل‌های دانلود شده
+
+            for item in data["data"]:
+                media_url = item.get("media")
+                if media_url:
+                    file_ext = "jpg" if item["type"] == "photo" else "mp4"
+                    filename = f"insta_media.{file_ext}"
+
+                    downloaded_file = await download_file(media_url, filename)
+                    if downloaded_file:
+                        media_files.append(downloaded_file)
+
+            # ارسال همه فایل‌ها به صورت ریپلای
+            if media_files:
+                await event.reply(file=media_files)
+                for file in media_files:
+                    os.remove(file)
 # اجرای ربات
 async def main():
     await client.start()
