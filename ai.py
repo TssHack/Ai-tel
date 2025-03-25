@@ -323,7 +323,7 @@ async def chat_with_ai(query, user_id):
 
 # دانلود موزیک از SoundCloud
 async def download_soundcloud_audio(track_url):
-    api_url = f"https://open.wiki-api.ir/apis-1/SoundcloudDownloader?key=tmPiWoM-6FXRaLt-GwPgLVH-y6g6dHr-dUyLJi3&url={track_url}"
+    api_url = f"https://open.wiki-api.ir/apis-1/SoundcloudDownloader?key=0ZVxR67-y7Dd6zh-C2jLE21-kY50NYC-GNxiJod&url={track_url}"
 
     async with aiohttp.ClientSession() as session:
         async with session.get(api_url) as response:
