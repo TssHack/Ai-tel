@@ -328,16 +328,22 @@ async def download_soundcloud_audio(track_url):
     async with aiohttp.ClientSession() as session:
         async with session.get(api_url) as response:
             if response.status != 200:
-                return None, None, None, None  # اصلاح مقدار بازگشتی
+                return None, None, None, None, None, None  # اصلاح مقدار بازگشتی
 
             data = await response.json()
-            if "results" not in data or "dlink" not in data["results"]:
-                return None, None, None, None  # اصلاح مقدار بازگشتی
+            if "detail" not in data or "data" not in data["detail"]:
+                return None, None, None, None, None, None  # اصلاح مقدار بازگشتی
 
-            audio_url = data["results"]["dlink"]
-            name = data["results"].get("name", "نامشخص")
-            artist = data["results"].get("artist", "نامشخص")
-            thumb_url = data["results"].get("thumb", None)
+            track_data = data["detail"]["data"]
+            name = track_data.get("name", "نامشخص")
+            artist = track_data.get("artist", "نامشخص")
+            thumb_url = track_data.get("thumb", None)
+            duration = track_data.get("duration", "نامشخص")
+            date = track_data.get("date", "تاریخ نامشخص")
+            audio_url = track_data.get("dlink", None)
+
+            if not audio_url:
+                return None, None, None, None, None, None  # اصلاح مقدار بازگشتی
 
             # دانلود فایل
             filename = f"{name}.mp3"
@@ -345,8 +351,8 @@ async def download_soundcloud_audio(track_url):
                 if audio_response.status == 200:
                     with open(filename, "wb") as file:
                         file.write(await audio_response.read())
-                    return filename, name, artist, thumb_url
-                return None, None, None, None  # اصلاح مقدار بازگشتی
+                    return filename, name, artist, thumb_url, duration, date
+                return None, None, None, None, None, None
 
 # جستجو در SoundCloud
 async def search_soundcloud(query):
@@ -358,7 +364,23 @@ async def search_soundcloud(query):
                 return None, "⚠️ خطا در دریافت اطلاعات"
 
             data = await response.json()
-            return data["results"][:5] if "results" in data and data["results"] else None, "⚠️ هیچ نتیجه‌ای یافت نشد!"
+            if "detail" not in data or "data" not in data["detail"]:
+                return None, "⚠️ هیچ نتیجه‌ای یافت نشد!"
+
+            results = data["detail"]["data"][:8]  # دریافت ۵ نتیجه اول
+            formatted_results = []
+
+            for item in results:
+                formatted_results.append({
+                    "title": item["title"],
+                    "link": item["link"],
+                    "img": item["img"] if item["img"] != "Not found" else None,
+                    "description": item["description"] if item["description"] != "Not found" else None,
+                    "date": item["time"]["date"],
+                    "time": item["time"]["time"]
+                })
+
+            return formatted_results if formatted_results else None, "⚠️ هیچ نتیجه‌ای یافت نشد!"
 
 @client.on(events.NewMessage(pattern='/on'))
 async def on_handler(event):
@@ -426,51 +448,56 @@ async def handle_message(event):
 
     # جستجو در SoundCloud
     if message.lower().startswith("ehsan "):
-        query = message[6:].strip()
-        if not query:
-            await event.reply("⚠️ لطفاً بعد از 'ehsan' عبارت جستجو وارد کنید.")
+    query = message[6:].strip()
+    if not query:
+        await event.reply("⚠️ لطفاً بعد از 'ehsan' عبارت جستجو وارد کنید.")
+        return
+
+    async with client.action(chat_id, "typing"):
+        await event.reply(f"🔍 در حال جستجو برای: **{query}**...")
+
+        results, error = await search_soundcloud(query)
+        if not results:
+            await event.reply(error)
             return
 
-        async with client.action(chat_id, "typing"):
-            await event.reply(f"🔍 در حال جستجو برای: **{query}**...")
+        for result in results:
+            title = result.get("title", "بدون عنوان")
+            link = result.get("link", "بدون لینک")
+            img = result.get("img", None)
+            description = result.get("description", "بدون توضیحات")
+            date = result.get("date", "تاریخ نامشخص")
+            time = result.get("time", "ساعت نامشخص")
 
-            results, error = await search_soundcloud(query)
-            if not results:
-                await event.reply(error)
-                return
+            caption = (
+                f"🎵 **{title}**\n"
+                f"📅 تاریخ: {date} | ⏰ ساعت: {time}\n"
+                f"🔗 [لینک ساندکلاد]({link})\n"
+            )
 
-            for result in results:
-                title = result.get("title", "بدون عنوان")
-                link = result.get("link", "بدون لینک")
-                img = result.get("img", None) if result.get("img") != "Not found" else None
-                description = result.get("description", "بدون توضیحات")
+            # محدود کردن کپشن به 950 کاراکتر برای جلوگیری از خطای تلگرام
+            caption = caption[:950] + "..." if len(caption) > 1000 else caption
 
-                caption = f"🎵 **{title}**\n🔗 [لینک ساندکلاد]({link})"
-
-                # محدود کردن متن کپشن به 1000 کاراکتر برای جلوگیری از خطای طولانی بودن کپشن
-                caption = caption[:950] + "..." if len(caption) > 1000 else caption
-
-                if img:
-                    await client.send_file(chat_id, img, caption=caption)
-                else:
-                    await event.reply(caption)
-        return
+            if img:
+                await client.send_file(chat_id, img, caption=caption)
+            else:
+                await event.reply(caption)
+    return
 
     # دانلود آهنگ از SoundCloud
     if "soundcloud.com" in message:
-        async with client.action(chat_id, "record-audio"):
-            await event.reply("🎵 در حال دانلود موزیک... لطفاً صبر کنید.")
+    async with client.action(chat_id, "record-audio"):
+        await event.reply("🎵 در حال دانلود موزیک... لطفاً صبر کنید.")
 
-            file_path, _, _, _ = await download_soundcloud_audio(message)  # فقط فایل موزیک را دریافت کن
+        file_path, name, artist, thumb_url, duration, date = await download_soundcloud_audio(message)  # دریافت تمام اطلاعات
 
-            if not file_path:
-                await event.reply("🚫 دانلود موزیک با مشکل مواجه شد.")
-                return
+        if not file_path:
+            await event.reply("🚫 دانلود موزیک با مشکل مواجه شد.")
+            return
 
-    # ارسال فایل بدون هیچ متنی
-            async with client.action(chat_id, "document"):
-                await client.send_file(chat_id, file_path)
-
+        # ارسال فایل موزیک بدون هیچ متنی
+        async with client.action(chat_id, "document"):
+            await client.send_file(chat_id, file_path)
     # حذف فایل پس از ارسال
             if os.path.exists(file_path):
                 os.remove(file_path)
