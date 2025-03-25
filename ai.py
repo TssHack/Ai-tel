@@ -17,13 +17,6 @@ client = TelegramClient(session_name, api_id, api_hash)
 
 robot_status = True
 
-def create_progress_bar(percentage: float, width: int = 25) -> str:
-    """ایجاد نوار پیشرفت"""
-    filled = int(width * percentage / 100)
-    empty = width - filled
-    bar = '━' * filled + '─' * empty
-    return f"[{bar}] {percentage:.1f}%"
-
 async def download_and_upload_file(url: str, client: httpx.AsyncClient, event, status_message, file_extension: str, index: int, total_files: int):
     """دانلود و آپلود همزمان فایل"""
     try:
@@ -31,7 +24,7 @@ async def download_and_upload_file(url: str, client: httpx.AsyncClient, event, s
         response = await client.get(url, follow_redirects=True)
         
         if response.status_code != 200:
-            await status_message.edit(f"❌ خطا در دانلود فایل {index}")
+            await status_message.edit(f"❌ خطا در دانلود فایل {index} - وضعیت: {response.status_code}")
             return
 
         total_size = int(response.headers.get('content-length', 0))
@@ -91,8 +84,9 @@ async def download_and_upload_file(url: str, client: httpx.AsyncClient, event, s
                 os.remove(temp_filename)
 
     except Exception as e:
-        print(f"خطا در پردازش فایل: {e}")
-        await status_message.edit(f"❌ خطا در پردازش فایل {index}")
+        # چاپ پیغام خطا برای بررسی دقیق‌تر
+        print(f"خطا در پردازش فایل {index}: {str(e)}")
+        await status_message.edit(f"❌ خطا در پردازش فایل {index}: {str(e)}")
 
 def create_progress_bar(percentage: float, width: int = 25) -> str:
     """ایجاد نوار پیشرفت"""
@@ -107,7 +101,7 @@ async def process_instagram_link(event, message: str, status_message):
         for attempt in range(2):  # دو بار تلاش
             try:
                 # استفاده از آدرس API برای دریافت لینک‌های رسانه‌ای
-                api_url = f"https://insta-donn.onrender.com/ehsan?url={message}"
+                api_url = f"https://دامین‌خوشگلت/insta.php?url={message}"
                 response = await http_client.get(api_url)
                 
                 # تبدیل پاسخ به JSON
