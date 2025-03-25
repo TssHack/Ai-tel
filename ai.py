@@ -1,6 +1,6 @@
 import asyncio
 import re
-import httpx
+#import httpx
 from datetime import datetime
 import aiohttp
 import os
@@ -99,7 +99,7 @@ async def process_instagram_link(event, message, status_message):
     async with httpx.AsyncClient(timeout=60.0) as http_client:
         for attempt in range(2):  
             try:
-                api_url = f"https://دامین‌خوشگلت/insta.php?url={message}"
+                api_url = f"https://insta-donn.onrender.com/ehsan?url={message}"
                 response = await http_client.get(api_url)
                 data = response.json()
 
