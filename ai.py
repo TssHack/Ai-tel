@@ -101,6 +101,60 @@ async def process_instagram_link(event, message: str, status_message):
         for attempt in range(2):  # دو بار تلاش
             try:
                 # استفاده از آدرس API برای دریافت لینک‌های رسانه‌ای
+                api_url = f"https://دامین‌خوشگلت/insta.php?url={message}"
+                response = await http_client.get(api_url)
+                
+                # تبدیل پاسخ به JSON
+                try:
+                    data = response.json()
+                    if isinstance(data, dict) and "data" in data:
+                        for index, item in enumerate(data["data"], 1):
+                            # بررسی داده‌ها
+                            if "media" in item:
+                                media_url = item["media"]
+                                media_type = item["type"]
+                                file_extension = '.jpg' if media_type == "photo" else '.mp4'
+                                
+                                # دانلود و ارسال فایل‌ها
+                                await download_and_upload_file(
+                                    media_url,
+                                    http_client,
+                                    event,
+                                    status_message,
+                                    file_extension,
+                                    index,
+                                    len(data["data"])
+                                )
+                            else:
+                                await status_message.edit(f"❌ فایل {index} فاقد لینک رسانه است.")
+                    else:
+                        await status_message.edit("❌ داده‌ها به درستی دریافت نشدند.")
+                        return
+                except ValueError:
+                    await status_message.edit("❌ خطا در تبدیل پاسخ به JSON")
+                    return
+
+                # در صورت موفقیت
+                await status_message.edit("✅ عملیات با موفقیت انجام شد!")
+                await asyncio.sleep(3)
+                await status_message.delete()
+                return  # خروج از تابع در صورت موفقیت
+
+            except Exception as e:
+                print(f"خطا در پردازش لینک (تلاش {attempt + 1}): {e}")
+                if attempt == 0:  # اگر تلاش اول بود
+                    await status_message.edit("❌ مشکل در پردازش. در حال تلاش مجدد...")
+                    await asyncio.sleep(2)
+                else:  # اگر تلاش دوم بود
+                    await status_message.edit(f"❌ خطا در پردازش فایل {index}: {str(e)}")
+
+
+async def process_instagram_link(event, message: str, status_message):
+    """پردازش یک لینک اینستاگرام"""
+    async with httpx.AsyncClient(timeout=60.0) as http_client:
+        for attempt in range(2):  # دو بار تلاش
+            try:
+                # استفاده از آدرس API برای دریافت لینک‌های رسانه‌ای
                 api_url = f"https://insta-donn.onrender.com/ehsan?url={message}"
                 response = await http_client.get(api_url)
                 
