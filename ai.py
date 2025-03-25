@@ -24,48 +24,47 @@ def create_progress_bar(percentage: float, width: int = 25) -> str:
     bar = '━' * filled + '─' * empty
     return f"[{bar}] {percentage:.1f}%"
 
-async def download_and_upload_file(url, client, event, status_message, file_extension, index, total_files):
+async def download_and_upload_file(url: str, client: httpx.AsyncClient, event, status_message, file_extension: str, index: int, total_files: int):
     """دانلود و آپلود همزمان فایل"""
     try:
         temp_filename = f"temp_{hash(url)}_{datetime.now().timestamp()}{file_extension}"
-        async with httpx.AsyncClient(timeout=60.0) as http_client:
-            response = await http_client.get(url, follow_redirects=True)
+        response = await client.get(url, follow_redirects=True)
+        
+        if response.status_code != 200:
+            await status_message.edit(f"❌ خطا در دانلود فایل {index}")
+            return
 
-            if response.status_code != 200:
-                await status_message.edit(f"❌ خطا در دانلود فایل {index}")
-                return
-
-            total_size = int(response.headers.get('content-length', 0))
-            downloaded = 0
-            last_update_time = 0
-
-            # دانلود فایل
-            with open(temp_filename, 'wb') as f:
-                async for chunk in response.aiter_bytes(chunk_size=8192):
-                    f.write(chunk)
-                    downloaded += len(chunk)
-
-                    current_time = asyncio.get_event_loop().time()
-                    if current_time - last_update_time > 0.5 and total_size > 0:
-                        last_update_time = current_time
-                        percentage = (downloaded / total_size) * 100
-                        progress_bar = create_progress_bar(percentage)
-                        size_mb = downloaded / (1024 * 1024)
-                        total_mb = total_size / (1024 * 1024)
-                        await status_message.edit(
-                            f"📥 دانلود فایل {index} از {total_files}...\n"
-                            f"{progress_bar}\n"
-                            f"💾 {size_mb:.1f}MB / {total_mb:.1f}MB"
-                        )
+        total_size = int(response.headers.get('content-length', 0))
+        downloaded = 0
+        last_update_time = 0
+        
+        # دانلود فایل
+        with open(temp_filename, 'wb') as f:
+            async for chunk in response.aiter_bytes(chunk_size=8192):
+                f.write(chunk)
+                downloaded += len(chunk)
+                
+                current_time = asyncio.get_event_loop().time()
+                if current_time - last_update_time > 0.5 and total_size > 0:
+                    last_update_time = current_time
+                    percentage = (downloaded / total_size) * 100
+                    progress_bar = create_progress_bar(percentage)
+                    size_mb = downloaded / (1024 * 1024)
+                    total_mb = total_size / (1024 * 1024)
+                    await status_message.edit(
+                        f"📥 درحال دانلود فایل {index} از {total_files}...\n"
+                        f"{progress_bar}\n"
+                        f"💾 {size_mb:.1f}MB / {total_mb:.1f}MB"
+                    )
 
         # آپلود فایل
         try:
             last_update_time = 0
-
+            
             async def progress_callback(current, total):
                 nonlocal last_update_time
                 current_time = asyncio.get_event_loop().time()
-
+                
                 if current_time - last_update_time > 0.5:
                     last_update_time = current_time
                     percentage = (current / total) * 100
@@ -73,11 +72,12 @@ async def download_and_upload_file(url, client, event, status_message, file_exte
                     size_mb = current / (1024 * 1024)
                     total_mb = total / (1024 * 1024)
                     await status_message.edit(
-                        f"📤 آپلود فایل {index} از {total_files}...\n"
+                        f"📤 درحال آپلود فایل {index} از {total_files}...\n"
                         f"{progress_bar}\n"
                         f"💾 {size_mb:.1f}MB / {total_mb:.1f}MB"
                     )
 
+            # ارسال فایل با ریپلای به پیام اصلی
             await event.client.send_file(
                 event.chat_id,
                 file=temp_filename,
@@ -94,56 +94,64 @@ async def download_and_upload_file(url, client, event, status_message, file_exte
         print(f"خطا در پردازش فایل: {e}")
         await status_message.edit(f"❌ خطا در پردازش فایل {index}")
 
-async def process_instagram_link(event, message, status_message):
-    """پردازش لینک اینستاگرام و دانلود فایل‌ها"""
+def create_progress_bar(percentage: float, width: int = 25) -> str:
+    """ایجاد نوار پیشرفت"""
+    filled = int(width * percentage / 100)
+    empty = width - filled
+    bar = '━' * filled + '─' * empty
+    return f"[{bar}] {percentage:.1f}%"
+
+async def process_instagram_link(event, message: str, status_message):
+    """پردازش یک لینک اینستاگرام"""
     async with httpx.AsyncClient(timeout=60.0) as http_client:
-        for attempt in range(2):  
+        for attempt in range(2):  # دو بار تلاش
             try:
+                # استفاده از آدرس API برای دریافت لینک‌های رسانه‌ای
                 api_url = f"https://insta-donn.onrender.com/ehsan?url={message}"
                 response = await http_client.get(api_url)
-                data = response.json()
-
-                if not data or data == []:
-                    if attempt == 0:
-                        await status_message.edit("تلاش مجدد...")
-                        await asyncio.sleep(2)
-                        continue
+                
+                # تبدیل پاسخ به JSON
+                try:
+                    data = response.json()
+                    if isinstance(data, dict) and "data" in data:
+                        for index, item in enumerate(data["data"], 1):
+                            # بررسی داده‌ها
+                            if "media" in item:
+                                media_url = item["media"]
+                                media_type = item["type"]
+                                file_extension = '.jpg' if media_type == "photo" else '.mp4'
+                                
+                                # دانلود و ارسال فایل‌ها
+                                await download_and_upload_file(
+                                    media_url,
+                                    http_client,
+                                    event,
+                                    status_message,
+                                    file_extension,
+                                    index,
+                                    len(data["data"])
+                                )
+                            else:
+                                await status_message.edit(f"❌ فایل {index} فاقد لینک رسانه است.")
                     else:
-                        await status_message.edit("❌ دریافت اطلاعات از API ناموفق بود.")
+                        await status_message.edit("❌ داده‌ها به درستی دریافت نشدند.")
                         return
+                except ValueError:
+                    await status_message.edit("❌ خطا در تبدیل پاسخ به JSON")
+                    return
 
-                tasks = []
-                for index, item in enumerate(data, 1):
-                    media_url = item["media"]
-                    media_type = item["type"]
-                    file_extension = '.jpg' if media_type == "photo" else '.mp4'
-
-                    task = asyncio.create_task(
-                        download_and_upload_file(
-                            media_url,
-                            http_client,
-                            event,
-                            status_message,
-                            file_extension,
-                            index,
-                            len(data)
-                        )
-                    )
-                    tasks.append(task)
-
-                await asyncio.gather(*tasks)
-
+                # در صورت موفقیت
                 await status_message.edit("✅ عملیات با موفقیت انجام شد!")
                 await asyncio.sleep(3)
                 await status_message.delete()
-                return
+                return  # خروج از تابع در صورت موفقیت
 
             except Exception as e:
                 print(f"خطا در پردازش لینک (تلاش {attempt + 1}): {e}")
-                if attempt == 0:
+                if attempt == 0:  # اگر تلاش اول بود
                     await status_message.edit("❌ مشکل در پردازش. در حال تلاش مجدد...")
                     await asyncio.sleep(2)
-                else:
+                else:  # اگر تلاش دوم بود
                     await status_message.edit("❌ مشکل در پردازش. لطفا بعداً تلاش کنید.")
 
 async def fetch_instagram_data(url):
