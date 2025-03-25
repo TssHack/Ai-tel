@@ -406,6 +406,26 @@ async def handle_message(event):
     message = event.raw_text.strip()
     text = event.message.text
 
+
+if "soundcloud.com" in message:
+   
+    async with client.action(chat_id, "record-audio"):
+        await event.reply("🎵 در حال دانلود موزیک... لطفاً صبر کنید.")
+
+        file_path, name, artist, thumb_url, duration, date = await download_soundcloud_audio(message)  # دریافت تمام اطلاعات
+
+        if not file_path:
+            await event.reply("🚫 دانلود موزیک با مشکل مواجه شد.")
+            return
+
+        # ارسال فایل موزیک بدون هیچ متنی
+        async with client.action(chat_id, "document"):
+            await client.send_file(chat_id, file_path)
+
+        # حذف فایل پس از ارسال
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
 if message.lower().startswith("ehsan "):
     query = message[6:].strip()
 
@@ -484,25 +504,8 @@ if message.lower().startswith("ehsan "):
                     await event.reply(file_link, parse_mode="html")
 
         return
-
-    # دانلود آهنگ از SoundCloud
-    if "soundcloud.com" in message:
-    async with client.action(chat_id, "record-audio"):
-        await event.reply("🎵 در حال دانلود موزیک... لطفاً صبر کنید.")
-
-        file_path, name, artist, thumb_url, duration, date = await download_soundcloud_audio(message)  # دریافت تمام اطلاعات
-
-        if not file_path:
-            await event.reply("🚫 دانلود موزیک با مشکل مواجه شد.")
-            return
-
-        # ارسال فایل موزیک بدون هیچ متنی
-        async with client.action(chat_id, "document"):
-            await client.send_file(chat_id, file_path)
-    # حذف فایل پس از ارسال
-            if os.path.exists(file_path):
-                os.remove(file_path)
-
+        
+    
     if re.search(r"https://www.pornhub\.com/view_video\.php\?viewkey=\S+", message):
         url = re.search(r"https://www.pornhub\.com/view_video\.php\?viewkey=\S+", message).group(0)
         await event.reply("⏳ در حال پردازش لینک...")
