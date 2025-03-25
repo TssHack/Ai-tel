@@ -406,6 +406,45 @@ async def handle_message(event):
     message = event.raw_text.strip()
     text = event.message.text
 
+if message.lower().startswith("ehsan "):
+    query = message[6:].strip()
+
+    if not query:
+        await event.reply("⚠️ لطفاً بعد از 'ehsan' عبارت جستجو وارد کنید.")
+        return
+
+    async with client.action(chat_id, "typing"):
+        await event.reply(f"🔍 در حال جستجو برای: **{query}**...")
+
+        results, error = await search_soundcloud(query)
+        if not results:
+            await event.reply(error)
+            return
+
+        for result in results:
+            title = result.get("title", "بدون عنوان")
+            link = result.get("link", "بدون لینک")
+            img = result.get("img", None)
+            description = result.get("description", "بدون توضیحات")
+            date = result.get("date", "تاریخ نامشخص")
+            time = result.get("time", "ساعت نامشخص")
+
+            caption = (
+                f"🎵 **{title}**\n"
+                f"📅 تاریخ: {date} | ⏰ ساعت: {time}\n"
+                f"🔗 [لینک ساندکلاد]({link})\n"
+            )
+
+            # محدود کردن کپشن به 950 کاراکتر برای جلوگیری از خطای تلگرام
+            caption = caption[:950] + "..." if len(caption) > 1000 else caption
+
+            if img:
+                await client.send_file(chat_id, img, caption=caption)
+            else:
+                await event.reply(caption)
+
+        return
+
     if not text:
         return
 
@@ -445,44 +484,6 @@ async def handle_message(event):
                     await event.reply(file_link, parse_mode="html")
 
         return
-
-    # جستجو در SoundCloud
-    if message.lower().startswith("ehsan "):
-    query = message[6:].strip()
-    if not query:
-        await event.reply("⚠️ لطفاً بعد از 'ehsan' عبارت جستجو وارد کنید.")
-        return
-
-    async with client.action(chat_id, "typing"):
-        await event.reply(f"🔍 در حال جستجو برای: **{query}**...")
-
-        results, error = await search_soundcloud(query)
-        if not results:
-            await event.reply(error)
-            return
-
-        for result in results:
-            title = result.get("title", "بدون عنوان")
-            link = result.get("link", "بدون لینک")
-            img = result.get("img", None)
-            description = result.get("description", "بدون توضیحات")
-            date = result.get("date", "تاریخ نامشخص")
-            time = result.get("time", "ساعت نامشخص")
-
-            caption = (
-                f"🎵 **{title}**\n"
-                f"📅 تاریخ: {date} | ⏰ ساعت: {time}\n"
-                f"🔗 [لینک ساندکلاد]({link})\n"
-            )
-
-            # محدود کردن کپشن به 950 کاراکتر برای جلوگیری از خطای تلگرام
-            caption = caption[:950] + "..." if len(caption) > 1000 else caption
-
-            if img:
-                await client.send_file(chat_id, img, caption=caption)
-            else:
-                await event.reply(caption)
-    return
 
     # دانلود آهنگ از SoundCloud
     if "soundcloud.com" in message:
