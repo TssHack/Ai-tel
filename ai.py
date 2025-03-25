@@ -155,7 +155,7 @@ async def process_instagram_link(event, message: str, status_message):
         for attempt in range(2):  # دو بار تلاش
             try:
                 # استفاده از آدرس API برای دریافت لینک‌های رسانه‌ای
-                api_url = f"https://insta-donn.onrender.com/ehsan?url={message}"
+                api_url = f"https://insta-ehsan.onrender.com/ehsan?url={message}"
                 response = await http_client.get(api_url)
                 
                 # تبدیل پاسخ به JSON
@@ -206,7 +206,7 @@ async def fetch_instagram_data(url):
     """ دریافت اطلاعات از API اینستاگرام """
     async with aiohttp.ClientSession() as session:
         try:
-            async with session.get(f"https://insta-tgfv.onrender.com/ehsan?url={url}") as response:
+            async with session.get(f"https://insta-ehsan.onrender.com/ehsan?url={url}") as response:
                 if response.status == 200:
                     return await response.json()
         except Exception as e:
@@ -214,7 +214,7 @@ async def fetch_instagram_data(url):
     return None
 
 async def process_link(url):
-    api_url = f"https://pp-don.onrender.com/?url={url}"  # آدرس API جدید
+    api_url = f"https://pp-don-63v4.onrender.com/?url={url}"  # آدرس API جدید
     max_retries = 3  # تعداد دفعات تلاش مجدد
 
     for attempt in range(max_retries):
