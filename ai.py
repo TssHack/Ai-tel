@@ -276,7 +276,7 @@ async def process_link(url):
 
 # جستجو در دیوار
 async def search_divar(query, city="tabriz"):
-    api_url = f"https://open.wiki-api.ir/apis-1/SearchDivar?city={city}&q={query}"
+    api_url = f"https://open.wiki-api.ir/apis-1/SearchDivar?key=tmPiWoM-6FXRaLt-GwPgLVH-y6g6dHr-dUyLJi3&city={city}&q={query}"
 
     async with aiohttp.ClientSession() as session:
         async with session.get(api_url) as response:
@@ -323,7 +323,7 @@ async def chat_with_ai(query, user_id):
 
 # دانلود موزیک از SoundCloud
 async def download_soundcloud_audio(track_url):
-    api_url = f"https://open.wiki-api.ir/apis-1/SoundcloudDownloader?url={track_url}"
+    api_url = f"https://open.wiki-api.ir/apis-1/SoundcloudDownloader?key=tmPiWoM-6FXRaLt-GwPgLVH-y6g6dHr-dUyLJi3&url={track_url}"
 
     async with aiohttp.ClientSession() as session:
         async with session.get(api_url) as response:
@@ -350,7 +350,7 @@ async def download_soundcloud_audio(track_url):
 
 # جستجو در SoundCloud
 async def search_soundcloud(query):
-    api_url = f"https://open.wiki-api.ir/apis-1/SoundcloudeSearch/?q={query}"
+    api_url = f"https://open.wiki-api.ir/apis-1/SoundcloudeSearch/?key=tmPiWoM-6FXRaLt-GwPgLVH-y6g6dHr-dUyLJi3&q={query}"
 
     async with aiohttp.ClientSession() as session:
         async with session.get(api_url) as response:
