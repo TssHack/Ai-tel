@@ -406,25 +406,25 @@ async def handle_message(event):
     message = event.raw_text.strip()
     text = event.message.text
 
+async def handle_soundcloud_audio(message, chat_id):
+    if "soundcloud.com" in message:
+        async with client.action(chat_id, "record-audio"):
+            await event.reply("🎵 در حال دانلود موزیک... لطفاً صبر کنید.")
 
-if "soundcloud.com" in message:
-   
-    async with client.action(chat_id, "record-audio"):
-        await event.reply("🎵 در حال دانلود موزیک... لطفاً صبر کنید.")
+            file_path, name, artist, thumb_url, duration, date = await download_soundcloud_audio(message)  # دریافت تمام اطلاعات
 
-        file_path, name, artist, thumb_url, duration, date = await download_soundcloud_audio(message)  # دریافت تمام اطلاعات
+            if not file_path:
+                await event.reply("🚫 دانلود موزیک با مشکل مواجه شد.")
+                return
 
-        if not file_path:
-            await event.reply("🚫 دانلود موزیک با مشکل مواجه شد.")
-            return
+            # ارسال فایل موزیک بدون هیچ متنی
+            async with client.action(chat_id, "document"):
+                await client.send_file(chat_id, file_path)
 
-        # ارسال فایل موزیک بدون هیچ متنی
-        async with client.action(chat_id, "document"):
-            await client.send_file(chat_id, file_path)
+            # حذف فایل پس از ارسال
+            if os.path.exists(file_path):
+                os.remove(file_path)
 
-        # حذف فایل پس از ارسال
-        if os.path.exists(file_path):
-            os.remove(file_path)
 
 if message.lower().startswith("ehsan "):
     query = message[6:].strip()
