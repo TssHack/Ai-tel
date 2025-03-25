@@ -101,7 +101,7 @@ async def process_instagram_link(event, message: str, status_message):
         for attempt in range(2):  # دو بار تلاش
             try:
                 # استفاده از آدرس API برای دریافت لینک‌های رسانه‌ای
-                api_url = f"https://دامین‌خوشگلت/insta.php?url={message}"
+                api_url = f"https://insta-donn.onrender.com/ehsan?url={message}"
                 response = await http_client.get(api_url)
                 
                 # تبدیل پاسخ به JSON
