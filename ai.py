@@ -406,7 +406,7 @@ async def handle_message(event):
     message = event.raw_text.strip()
     text = event.message.text
 
-async def handle_soundcloud_audio(message, chat_id):
+async def process_message(message, chat_id):
     if "soundcloud.com" in message:
         async with client.action(chat_id, "record-audio"):
             await event.reply("🎵 در حال دانلود موزیک... لطفاً صبر کنید.")
@@ -424,6 +424,11 @@ async def handle_soundcloud_audio(message, chat_id):
             # حذف فایل پس از ارسال
             if os.path.exists(file_path):
                 os.remove(file_path)
+    else:
+        await event.reply("⚠️ لطفاً بعد از 'ehsan' عبارت جستجو وارد کنید.")
+
+# برای فراخوانی تابع، می‌توانید از این دستور استفاده کنید:
+await process_message(message, chat_id)
 
 
 if message.lower().startswith("ehsan "):
