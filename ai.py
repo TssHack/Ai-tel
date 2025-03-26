@@ -24,10 +24,10 @@ licenses = [
     "ucGWVCM-S5nHEzi-bss0SdJ-WDwABuG-6YWzWU2",
     "GvrtzqZ-jK3MkEK-NRqhjW1-wvNqXUn-QrKsrDP",
     "5Ti1I4O-SXQ0kp1-qLcZ529-qQ1QgIR-i5QM7oV",
-    "68876555",
-    "654322678",
-    "7655",
-    "6666666"
+    "3Qk17MU-jc6fJ4g-XFLOCVy-EJlWSmc-c9nxR71",
+    "ctorzhF-9vxEUIb-AqybTch-MCJe0Oh-SWx1G7d",
+    "lZEcaGZ-5SeK0bS-N6urNSx-tc9WwZO-qJEkcsT",
+    "Dg20ygp-6d46CtA-OqEZtv3-CRko2qE-oORjhN0"
 ]
 current_index = 0
 
