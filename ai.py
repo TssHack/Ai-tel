@@ -559,11 +559,10 @@ async def handle_message(event):
                     await event.reply(caption, link_preview=True, reply_to=event.message.id)
 
         return
-        
-async def handle_message(event):
     # کدهایی که از async with استفاده می‌کنند
     if "soundcloud.com" in message:
-        async with client.action(chat_id, "record-audio"):
+        try:
+            # اطلاع‌رسانی به کاربر
             await event.reply("🎵 در حال دانلود موزیک... لطفاً صبر کنید.")
 
             # دریافت اطلاعات موزیک
@@ -583,15 +582,14 @@ async def handle_message(event):
                 caption += f"🖼️ تصویر بندانگشتی: {thumb_url}"
 
             # ارسال فایل موزیک همراه با کپشن
-            try:
-                async with client.action(chat_id, "document"):
-                    await client.send_file(chat_id, file_path, caption=caption)
+            async with client.action(chat_id, "document"):
+                await client.send_file(chat_id, file_path, caption=caption)
 
-                # حذف فایل پس از ارسال
-                if os.path.exists(file_path):
-                    os.remove(file_path)
-            except Exception as e:
-                await event.reply(f"❗️ خطا در ارسال فایل: {str(e)}")
+            # حذف فایل پس از ارسال
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        except Exception as e:
+            await event.reply(f"❗️ خطا در ارسال فایل: {str(e)}")
                 if os.path.exists(file_path):
                     os.remove(file_path)
 
