@@ -397,7 +397,21 @@ async def search_soundcloud(query):
                         if not search_results:
                             return None, "⚠️ هیچ نتیجه‌ای یافت نشد!"
 
-                        return search_results, None  # بازگرداندن داده‌های جستجو
+                        # دریافت ۸ نتیجه اول
+                        results = search_results[:8]  
+                        formatted_results = []
+
+                        for item in results:
+                            formatted_results.append({
+                                "title": item.get("title", "بدون عنوان"),
+                                "link": item.get("link"),
+                                "img": item["img"] if item.get("img") != "Not found" else None,
+                                "description": item["description"] if item.get("description") != "Not found" else None,
+                                "date": item.get("time", {}).get("date", "تاریخ نامشخص"),
+                                "time": item.get("time", {}).get("time", "زمان نامشخص")
+                            })
+
+                        return formatted_results if formatted_results else None, "⚠️ هیچ نتیجه‌ای یافت نشد!"
 
                     # اگر API محدود شد یا خطای 403 گرفت، لایسنس را عوض می‌کنیم
                     if response.status == 403:
@@ -409,20 +423,6 @@ async def search_soundcloud(query):
                 return None, "⚠️ مشکل در اتصال به سرور"
 
     return None, "⚠️ تمام لایسنس‌ها منقضی شده‌اند!"
-            results = data["detail"]["data"][:8]  # دریافت ۵ نتیجه اول
-            formatted_results = []
-
-            for item in results:
-                formatted_results.append({
-                    "title": item["title"],
-                    "link": item["link"],
-                    "img": item["img"] if item["img"] != "Not found" else None,
-                    "description": item["description"] if item["description"] != "Not found" else None,
-                    "date": item["time"]["date"],
-                    "time": item["time"]["time"]
-                })
-
-            return formatted_results if formatted_results else None, "⚠️ هیچ نتیجه‌ای یافت نشد!"
 
 @client.on(events.NewMessage(pattern='/on'))
 async def on_handler(event):
