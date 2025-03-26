@@ -371,9 +371,8 @@ async def download_soundcloud_audio(track_url):
                 return None, None, None, None, None, None
 
     return None, None, None, None, None, None # اصلاح مقدار بازگشتی
-
-                # دانلود فایل
-                filename = f"{name}.mp3"
+    
+    filename = f"{name}.mp3"
                 async with session.get(audio_url) as audio_response:
                     if audio_response.status == 200:
                         with open(filename, "wb") as file:
@@ -384,6 +383,7 @@ async def download_soundcloud_audio(track_url):
         except Exception as e:
             print(f"Error: {e}")
             return None, None, None, None, None, None
+                
 
 # جستجو در SoundCloud
 async def search_soundcloud(query):
