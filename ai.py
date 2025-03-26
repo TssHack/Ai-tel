@@ -27,7 +27,8 @@ licenses = [
     "3Qk17MU-jc6fJ4g-XFLOCVy-EJlWSmc-c9nxR71",
     "ctorzhF-9vxEUIb-AqybTch-MCJe0Oh-SWx1G7d",
     "lZEcaGZ-5SeK0bS-N6urNSx-tc9WwZO-qJEkcsT",
-    "Dg20ygp-6d46CtA-OqEZtv3-CRko2qE-oORjhN0"
+    "Dg20ygp-6d46CtA-OqEZtv3-CRko2qE-oORjhN0",
+    "QabJdKR-4VULYJ4-lOqS19N-FOANKGz-ZuysnYH"
 ]
 current_index = 0
 
