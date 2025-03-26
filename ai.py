@@ -579,7 +579,6 @@ async def handle_message(event):
             caption += f"⏳ مدت زمان: {duration}\n"
             caption += f"📅 تاریخ: {date}\n"
             if thumb_url:
-                caption += f"🖼️ تصویر بندانگشتی: {thumb_url}"
 
             # ارسال فایل موزیک همراه با کپشن
             async with client.action(chat_id, "document"):
