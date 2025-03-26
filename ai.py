@@ -411,38 +411,6 @@ async def handle_message(event):
     message = event.raw_text.strip()
     text = event.message.text
 
-if "soundcloud.com" in message:
-    async with client.action(chat_id, "record-audio"):
-        await event.reply("🎵 در حال دانلود موزیک... لطفاً صبر کنید.")
-
-        # دریافت اطلاعات موزیک
-        file_path, name, artist, thumb_url, duration, date = await download_soundcloud_audio(message)
-
-        # بررسی اینکه آیا فایل به درستی دانلود نشده است
-        if not file_path:
-            await event.reply("🚫 دانلود موزیک با مشکل مواجه شد.")
-            return
-
-        # ساختن کپشن برای موزیک
-        caption = f"🎶 آهنگ: {name}\n"
-        caption += f"🎤 هنرمند: {artist}\n"
-        caption += f"⏳ مدت زمان: {duration}\n"
-        caption += f"📅 تاریخ: {date}\n"
-        if thumb_url:
-            caption += f"🖼️ تصویر بندانگشتی: {thumb_url}"
-
-        # ارسال فایل موزیک همراه با کپشن
-        try:
-            async with client.action(chat_id, "document"):
-                await client.send_file(chat_id, file_path, caption=caption)
-
-            # حذف فایل پس از ارسال
-            if os.path.exists(file_path):
-                os.remove(file_path)
-        except Exception as e:
-            await event.reply(f"❗️ خطا در ارسال فایل: {str(e)}")
-            if os.path.exists(file_path):
-                os.remove(file_path)
     
     if not text:
         return
@@ -591,6 +559,39 @@ if "soundcloud.com" in message:
                     await event.reply(caption, link_preview=True, reply_to=event.message.id)
 
         return
+
+if "soundcloud.com" in message:
+    async with client.action(chat_id, "record-audio"):
+        await event.reply("🎵 در حال دانلود موزیک... لطفاً صبر کنید.")
+
+        # دریافت اطلاعات موزیک
+        file_path, name, artist, thumb_url, duration, date = await download_soundcloud_audio(message)
+
+        # بررسی اینکه آیا فایل به درستی دانلود نشده است
+        if not file_path:
+            await event.reply("🚫 دانلود موزیک با مشکل مواجه شد.")
+            return
+
+        # ساختن کپشن برای موزیک
+        caption = f"🎶 آهنگ: {name}\n"
+        caption += f"🎤 هنرمند: {artist}\n"
+        caption += f"⏳ مدت زمان: {duration}\n"
+        caption += f"📅 تاریخ: {date}\n"
+        if thumb_url:
+            caption += f"🖼️ تصویر بندانگشتی: {thumb_url}"
+
+        # ارسال فایل موزیک همراه با کپشن
+        try:
+            async with client.action(chat_id, "document"):
+                await client.send_file(chat_id, file_path, caption=caption)
+
+            # حذف فایل پس از ارسال
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        except Exception as e:
+            await event.reply(f"❗️ خطا در ارسال فایل: {str(e)}")
+            if os.path.exists(file_path):
+                os.remove(file_path)
 
 @client.on(events.NewMessage(pattern=r'.*instagram\.com.*'))
 async def handle_instagram(event):
