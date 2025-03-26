@@ -301,8 +301,8 @@ async def search_divar(query, city="tabriz"):
             data = await response.json()
 
             if "status" in data and data["status"] == True:
-                results = data["results"][:20]  # نمایش ۱۰ نتیجه اول
-                return results, None
+                results = data["detail"][:20]  # نمایش ۱۰ نتیجه اول
+                return detail, None
             return None, "⚠️ هیچ نتیجه‌ای یافت نشد!"
 
 # تابع درخواست به API
@@ -508,10 +508,18 @@ async def handle_message(event):
             for result in results:
                 title = result.get("title", "بدون عنوان")
                 link = result.get("link", "بدون لینک")
-                img = result.get("img", None) if result.get("img") != "Not found" else None
+                img = result.get("img") if result.get("img") else None
                 description = result.get("description", "بدون توضیحات")
+                date = result.get("date", "تاریخ نامشخص")
+                time = result.get("time", "زمان نامشخص")
 
-                caption = f"🎵 **{title}**\n🔗 [لینک ساندکلاد]({link})"
+                caption = (
+                f"🎵 **{title}**\n"
+                f"📆 **تاریخ:** {date}\n"
+                f"⏰ **زمان:** {time}\n"
+                f"📝 **توضیحات:** {description}\n"
+                f"🔗 [لینک ساندکلاد]({link})"
+                )
 
                 # محدود کردن متن کپشن به 1000 کاراکتر برای جلوگیری از خطای طولانی بودن کپشن
                 caption = caption[:950] + "..." if len(caption) > 1000 else caption
