@@ -406,70 +406,6 @@ async def handle_message(event):
     message = event.raw_text.strip()
     text = event.message.text
 
-async def process_message(message, chat_id):
-    if "soundcloud.com" in message:
-        async with client.action(chat_id, "record-audio"):
-            await event.reply("🎵 در حال دانلود موزیک... لطفاً صبر کنید.")
-
-            file_path, name, artist, thumb_url, duration, date = await download_soundcloud_audio(message)  # دریافت تمام اطلاعات
-
-            if not file_path:
-                await event.reply("🚫 دانلود موزیک با مشکل مواجه شد.")
-                return
-
-            # ارسال فایل موزیک بدون هیچ متنی
-            async with client.action(chat_id, "document"):
-                await client.send_file(chat_id, file_path)
-
-            # حذف فایل پس از ارسال
-            if os.path.exists(file_path):
-                os.remove(file_path)
-    else:
-        await event.reply("⚠️ لطفاً بعد از 'ehsan' عبارت جستجو وارد کنید.")
-
-# برای فراخوانی تابع، می‌توانید از این دستور استفاده کنید:
-await process_message(message, chat_id)
-
-
-if message.lower().startswith("ehsan "):
-    query = message[6:].strip()
-
-    if not query:
-        await event.reply("⚠️ لطفاً بعد از 'ehsan' عبارت جستجو وارد کنید.")
-        return
-
-    async with client.action(chat_id, "typing"):
-        await event.reply(f"🔍 در حال جستجو برای: **{query}**...")
-
-        results, error = await search_soundcloud(query)
-        if not results:
-            await event.reply(error)
-            return
-
-        for result in results:
-            title = result.get("title", "بدون عنوان")
-            link = result.get("link", "بدون لینک")
-            img = result.get("img", None)
-            description = result.get("description", "بدون توضیحات")
-            date = result.get("date", "تاریخ نامشخص")
-            time = result.get("time", "ساعت نامشخص")
-
-            caption = (
-                f"🎵 **{title}**\n"
-                f"📅 تاریخ: {date} | ⏰ ساعت: {time}\n"
-                f"🔗 [لینک ساندکلاد]({link})\n"
-            )
-
-            # محدود کردن کپشن به 950 کاراکتر برای جلوگیری از خطای تلگرام
-            caption = caption[:950] + "..." if len(caption) > 1000 else caption
-
-            if img:
-                await client.send_file(chat_id, img, caption=caption)
-            else:
-                await event.reply(caption)
-
-        return
-
     if not text:
         return
 
@@ -509,8 +445,58 @@ if message.lower().startswith("ehsan "):
                     await event.reply(file_link, parse_mode="html")
 
         return
-        
-    
+
+    # جستجو در SoundCloud
+    if message.lower().startswith("ehsan "):
+        query = message[6:].strip()
+        if not query:
+            await event.reply("⚠️ لطفاً بعد از 'ehsan' عبارت جستجو وارد کنید.")
+            return
+
+        async with client.action(chat_id, "typing"):
+            await event.reply(f"🔍 در حال جستجو برای: **{query}**...")
+
+            results, error = await search_soundcloud(query)
+            if not results:
+                await event.reply(error)
+                return
+
+            for result in results:
+                title = result.get("title", "بدون عنوان")
+                link = result.get("link", "بدون لینک")
+                img = result.get("img", None) if result.get("img") != "Not found" else None
+                description = result.get("description", "بدون توضیحات")
+
+                caption = f"🎵 **{title}**\n🔗 [لینک ساندکلاد]({link})"
+
+                # محدود کردن متن کپشن به 1000 کاراکتر برای جلوگیری از خطای طولانی بودن کپشن
+                caption = caption[:950] + "..." if len(caption) > 1000 else caption
+
+                if img:
+                    await client.send_file(chat_id, img, caption=caption)
+                else:
+                    await event.reply(caption)
+        return
+
+    # دانلود آهنگ از SoundCloud
+    if "soundcloud.com" in message:
+        async with client.action(chat_id, "record-audio"):
+            await event.reply("🎵 در حال دانلود موزیک... لطفاً صبر کنید.")
+
+            file_path, _, _, _ = await download_soundcloud_audio(message)  # فقط فایل موزیک را دریافت کن
+
+            if not file_path:
+                await event.reply("🚫 دانلود موزیک با مشکل مواجه شد.")
+                return
+
+    # ارسال فایل بدون هیچ متنی
+            async with client.action(chat_id, "document"):
+                await client.send_file(chat_id, file_path)
+
+    # حذف فایل پس از ارسال
+            if os.path.exists(file_path):
+                os.remove(file_path)
+
     if re.search(r"https://www.pornhub\.com/view_video\.php\?viewkey=\S+", message):
         url = re.search(r"https://www.pornhub\.com/view_video\.php\?viewkey=\S+", message).group(0)
         await event.reply("⏳ در حال پردازش لینک...")
