@@ -326,33 +326,38 @@ async def download_soundcloud_audio(track_url):
     api_url = f"https://open.wiki-api.ir/apis-1/SoundcloudDownloader?key=0ZVxR67-y7Dd6zh-C2jLE21-kY50NYC-GNxiJod&url={track_url}"
 
     async with aiohttp.ClientSession() as session:
-        async with session.get(api_url) as response:
-            if response.status != 200:
-                return None, None, None, None, None, None  # اصلاح مقدار بازگشتی
+        try:
+            async with session.get(api_url) as response:
+                if response.status != 200:
+                    return None, None, None, None, None, None  # اصلاح مقدار بازگشتی
 
-            data = await response.json()
-            if "detail" not in data or "data" not in data["detail"]:
-                return None, None, None, None, None, None  # اصلاح مقدار بازگشتی
+                data = await response.json()
+                if "detail" not in data or "data" not in data["detail"]:
+                    return None, None, None, None, None, None  # اصلاح مقدار بازگشتی
 
-            track_data = data["detail"]["data"]
-            name = track_data.get("name", "نامشخص")
-            artist = track_data.get("artist", "نامشخص")
-            thumb_url = track_data.get("thumb", None)
-            duration = track_data.get("duration", "نامشخص")
-            date = track_data.get("date", "تاریخ نامشخص")
-            audio_url = track_data.get("dlink", None)
+                track_data = data["detail"]["data"]
+                name = track_data.get("name", "نامشخص")
+                artist = track_data.get("artist", "نامشخص")
+                thumb_url = track_data.get("thumb", None)
+                duration = track_data.get("duration", "نامشخص")
+                date = track_data.get("date", "تاریخ نامشخص")
+                audio_url = track_data.get("dlink", None)
 
-            if not audio_url:
-                return None, None, None, None, None, None  # اصلاح مقدار بازگشتی
+                if not audio_url:
+                    return None, None, None, None, None, None  # اصلاح مقدار بازگشتی
 
-            # دانلود فایل
-            filename = f"{name}.mp3"
-            async with session.get(audio_url) as audio_response:
-                if audio_response.status == 200:
-                    with open(filename, "wb") as file:
-                        file.write(await audio_response.read())
-                    return filename, name, artist, thumb_url, duration, date
-                return None, None, None, None, None, None
+                # دانلود فایل
+                filename = f"{name}.mp3"
+                async with session.get(audio_url) as audio_response:
+                    if audio_response.status == 200:
+                        with open(filename, "wb") as file:
+                            file.write(await audio_response.read())
+                        return filename, name, artist, thumb_url, duration, date
+                    else:
+                        return None, None, None, None, None, None
+        except Exception as e:
+            print(f"Error: {e}")
+            return None, None, None, None, None, None
 
 # جستجو در SoundCloud
 async def search_soundcloud(query):
