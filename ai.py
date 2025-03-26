@@ -409,6 +409,7 @@ async def handle_message(event):
     chat_id = event.chat_id
     user_id = event.sender_id
     message = event.raw_text.strip()
+    message_id = event.message.id
     text = event.message.text
 
     
@@ -582,7 +583,7 @@ async def handle_message(event):
 
             # ارسال فایل موزیک همراه با کپشن
             async with client.action(chat_id, "document"):
-                await client.send_file(chat_id, file_path, caption=caption)
+                await client.send_file(chat_id, file_path, caption=caption, reply_to=message_id)
 
             # حذف فایل پس از ارسال
             if os.path.exists(file_path):
