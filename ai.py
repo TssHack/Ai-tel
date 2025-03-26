@@ -17,6 +17,20 @@ client = TelegramClient(session_name, api_id, api_hash)
 
 robot_status = True
 
+licenses = [
+    "tmPiWoM-6FXRaLt-GwPgLVH-y6g6dHr-dUyLJi3",
+    "0ZVxR67-y7Dd6zh-C2jLE21-kY50NYC-GNxiJod",
+    "eLwm3cR-2XegSsv-9l9DCta-q4ng622-EeuAsSy",
+    "ucGWVCM-S5nHEzi-bss0SdJ-WDwABuG-6YWzWU2",
+    "GvrtzqZ-jK3MkEK-NRqhjW1-wvNqXUn-QrKsrDP",
+    "5Ti1I4O-SXQ0kp1-qLcZ529-qQ1QgIR-i5QM7oV",
+    "68876555",
+    "654322678",
+    "7655",
+    "6666666"
+]
+current_index = 0
+
 async def download_and_upload_file(url: str, client: httpx.AsyncClient, event, status_message, file_extension: str, index: int, total_files: int):
     """دانلود و آپلود همزمان فایل"""
     try:
@@ -101,7 +115,7 @@ async def process_instagram_link(event, message: str, status_message):
         for attempt in range(2):  # دو بار تلاش
             try:
                 # استفاده از آدرس API برای دریافت لینک‌های رسانه‌ای
-                api_url = f"https://دامین‌خوشگلت/insta.php?url={message}"
+                api_url = f"https://insta-ehsan.onrender.com/ehsan?url={message}"
                 response = await http_client.get(api_url)
                 
                 # تبدیل پاسخ به JSON
@@ -323,28 +337,39 @@ async def chat_with_ai(query, user_id):
 
 # دانلود موزیک از SoundCloud
 async def download_soundcloud_audio(track_url):
-    api_url = f"https://open.wiki-api.ir/apis-1/SoundcloudDownloader?key=0ZVxR67-y7Dd6zh-C2jLE21-kY50NYC-GNxiJod&url={track_url}"
+    global current_index
 
     async with aiohttp.ClientSession() as session:
-        try:
-            async with session.get(api_url) as response:
-                if response.status != 200:
-                    return None, None, None, None, None, None  # اصلاح مقدار بازگشتی
+        for _ in range(len(licenses)):  # تلاش تا آخرین لایسنس
+            api_key = licenses[current_index]
+            api_url = f"https://open.wiki-api.ir/apis-1/SoundcloudDownloader?key={api_key}&url={track_url}"
 
-                data = await response.json()
-                if "detail" not in data or "data" not in data["detail"]:
-                    return None, None, None, None, None, None  # اصلاح مقدار بازگشتی
+            try:
+                async with session.get(api_url) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        track_data = data.get("detail", {}).get("data", {})
 
-                track_data = data["detail"]["data"]
-                name = track_data.get("name", "نامشخص")
-                artist = track_data.get("artist", "نامشخص")
-                thumb_url = track_data.get("thumb", None)
-                duration = track_data.get("duration", "نامشخص")
-                date = track_data.get("date", "تاریخ نامشخص")
-                audio_url = track_data.get("dlink", None)
+                        name = track_data.get("name", "نامشخص")
+                        artist = track_data.get("artist", "نامشخص")
+                        thumb_url = track_data.get("thumb")
+                        duration = track_data.get("duration", "نامشخص")
+                        date = track_data.get("date", "تاریخ نامشخص")
+                        audio_url = track_data.get("dlink")
 
-                if not audio_url:
-                    return None, None, None, None, None, None  # اصلاح مقدار بازگشتی
+                        if audio_url:  # اگر لینک دانلود موجود بود، مقدار را برگردان
+                            return name, artist, thumb_url, duration, date, audio_url
+
+                    # اگر API محدود شد یا خطای 403 گرفت، لایسنس را عوض می‌کنیم
+                    if response.status == 403:
+                        print(f"❌ لایسنس {api_key} محدود شد. جایگزینی با بعدی...")
+                        current_index = (current_index + 1) % len(licenses)
+
+            except aiohttp.ClientError:
+                print("⚠ خطا در ارتباط با API")
+                return None, None, None, None, None, None
+
+    return None, None, None, None, None, None # اصلاح مقدار بازگشتی
 
                 # دانلود فایل
                 filename = f"{name}.mp3"
@@ -361,17 +386,34 @@ async def download_soundcloud_audio(track_url):
 
 # جستجو در SoundCloud
 async def search_soundcloud(query):
-    api_url = f"https://open.wiki-api.ir/apis-1/SoundcloudeSearch/?key=tmPiWoM-6FXRaLt-GwPgLVH-y6g6dHr-dUyLJi3&q={query}"
+    global current_index
 
     async with aiohttp.ClientSession() as session:
-        async with session.get(api_url) as response:
-            if response.status != 200:
-                return None, "⚠️ خطا در دریافت اطلاعات"
+        for _ in range(len(licenses)):  # تلاش تا آخرین لایسنس
+            api_key = licenses[current_index]
+            api_url = f"https://open.wiki-api.ir/apis-1/SoundcloudeSearch/?key={api_key}&q={query}"
 
-            data = await response.json()
-            if "detail" not in data or "data" not in data["detail"]:
-                return None, "⚠️ هیچ نتیجه‌ای یافت نشد!"
+            try:
+                async with session.get(api_url) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        search_results = data.get("detail", {}).get("data", [])
 
+                        if not search_results:
+                            return None, "⚠️ هیچ نتیجه‌ای یافت نشد!"
+
+                        return search_results, None  # بازگرداندن داده‌های جستجو
+
+                    # اگر API محدود شد یا خطای 403 گرفت، لایسنس را عوض می‌کنیم
+                    if response.status == 403:
+                        print(f"❌ لایسنس {api_key} محدود شد. جایگزینی با بعدی...")
+                        current_index = (current_index + 1) % len(licenses)
+
+            except aiohttp.ClientError:
+                print("⚠ خطا در ارتباط با API")
+                return None, "⚠️ مشکل در اتصال به سرور"
+
+    return None, "⚠️ تمام لایسنس‌ها منقضی شده‌اند!"
             results = data["detail"]["data"][:8]  # دریافت ۵ نتیجه اول
             formatted_results = []
 
