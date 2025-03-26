@@ -497,25 +497,25 @@ async def handle_message(event):
                 return
 
         # ساختن کپشن برای موزیک
-           caption = f"🎶 آهنگ: {name}\n"
-    ‌       caption += f"🎤 هنرمند: {artist}\n"
-           caption += f"⏳ مدت زمان: {duration}\n"
-           caption += f"📅 تاریخ: {date}\n"
-           if thumb_url:
-               caption += f"🖼️ تصویر بندانگشتی: {thumb_url}"
+            caption = f"🎶 آهنگ: {name}\n"
+    ‌        caption += f"🎤 هنرمند: {artist}\n"
+            caption += f"⏳ مدت زمان: {duration}\n"
+            caption += f"📅 تاریخ: {date}\n"
+            if thumb_url:
+                caption += f"🖼️ تصویر بندانگشتی: {thumb_url}"
 
     # ارسال فایل موزیک همراه با کپشن
-          try:
-              async with client.action(chat_id, "document"):
-                  await client.send_file(chat_id, file_path, caption=caption)
+           try:
+               async with client.action(chat_id, "document"):
+                   await client.send_file(chat_id, file_path, caption=caption)
 
             # حذف فایل پس از ارسال
-              if os.path.exists(file_path):
-                  os.remove(file_path)
-          except Exception as e:
-              await event.reply(f"❗️ خطا در ارسال فایل: {str(e)}")
-              if os.path.exists(file_path):
-                  os.remove(file_path)
+               if os.path.exists(file_path):
+                   os.remove(file_path)
+           except Exception as e:
+               await event.reply(f"❗️ خطا در ارسال فایل: {str(e)}")
+               if os.path.exists(file_path):
+                   os.remove(file_path)
 
     if re.search(r"https://www.pornhub\.com/view_video\.php\?viewkey=\S+", message):
         url = re.search(r"https://www.pornhub\.com/view_video\.php\?viewkey=\S+", message).group(0)
