@@ -359,7 +359,14 @@ async def download_soundcloud_audio(track_url):
                         audio_url = track_data.get("dlink")
 
                         if audio_url:  # اگر لینک دانلود موجود بود، مقدار را برگردان
-                            return name, artist, thumb_url, duration, date, audio_url
+                            filename = f"{name}.mp3"
+                            async with session.get(audio_url) as audio_response:
+                                if audio_response.status == 200:
+                                    with open(filename, "wb") as file:
+                                        file.write(await audio_response.read())
+                                    return filename, name, artist, thumb_url, duration, date
+                                
+                            return None, None, None, None, None, None
 
                     # اگر API محدود شد یا خطای 403 گرفت، لایسنس را عوض می‌کنیم
                     if response.status == 403:
@@ -370,20 +377,7 @@ async def download_soundcloud_audio(track_url):
                 print("⚠ خطا در ارتباط با API")
                 return None, None, None, None, None, None
 
-    return None, None, None, None, None, None # اصلاح مقدار بازگشتی
-    
-    filename = f"{name}.mp3"
-                async with session.get(audio_url) as audio_response:
-                    if audio_response.status == 200:
-                        with open(filename, "wb") as file:
-                            file.write(await audio_response.read())
-                        return filename, name, artist, thumb_url, duration, date
-                    else:
-                        return None, None, None, None, None, None
-        except Exception as e:
-            print(f"Error: {e}")
-            return None, None, None, None, None, None
-                
+    return None, None, None, None, None, None
 
 # جستجو در SoundCloud
 async def search_soundcloud(query):
