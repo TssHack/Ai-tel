@@ -590,8 +590,7 @@ async def handle_message(event):
                 os.remove(file_path)
         except Exception as e:
             await event.reply(f"❗️ خطا در ارسال فایل: {str(e)}")
-                if os.path.exists(file_path):
-                    os.remove(file_path)
+                
 
 @client.on(events.NewMessage(pattern=r'.*instagram\.com.*'))
 async def handle_instagram(event):
