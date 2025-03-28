@@ -1,5 +1,6 @@
 import asyncio
 import re
+import requests
 import httpx
 from datetime import datetime
 import aiohttp
@@ -31,6 +32,23 @@ licenses = [
     "QabJdKR-4VULYJ4-lOqS19N-FOANKGz-ZuysnYH"
 ]
 current_index = 0
+
+def get_horoscope():
+    url = "https://open.wiki-api.ir/apis-1/Horoscope/?key=Sl6ELFq-nUnpkAE-gCNZqJQ-2W8335T-1SAPzwG"
+    response = requests.get(url)
+    data = response.json()
+
+    if data["detail"]["status"] == "success":
+        horoscope = data["detail"]["data"]
+        return horoscope
+    return None
+
+def download_image(img_url, filename="horoscope_image.jpg"):
+    img_data = requests.get(img_url).content
+    with open(filename, 'wb') as handler:
+        handler.write(img_data)
+    return filename
+
 
 async def download_and_upload_file(url: str, client: httpx.AsyncClient, event, status_message, file_extension: str, index: int, total_files: int):
     """دانلود و آپلود همزمان فایل"""
@@ -643,6 +661,36 @@ async def handle_instagram(event):
     message = event.message.text
     status_message = await event.reply("🔄 در حال پردازش لینک... لطفا صبر کنید.")
     await process_instagram_link(event, message, status_message)
+
+@client.on(events.NewMessage(pattern='^فال'))
+async def handler(event):
+    # دریافت فال
+    horoscope = get_horoscope()
+    
+    if horoscope:
+        faal_text = horoscope["faal"]
+        taabir_text = horoscope["taabir"]
+        img_url = horoscope["img"]
+        audio_url = horoscope["audio"]
+
+        # دانلود تصویر
+        img_filename = download_image(img_url)
+
+        # ارسال تصویر و متن به همراه کپشن
+        await event.reply(
+            f"<b>فال امروز شما:</b>\n\n{faal_text}\n\n"
+            f"<i>تعبیر: {taabir_text}</i>\n\n",
+            parse_mode='html',  # استفاده از HTML برای فرمت‌بندی متن
+            file=img_filename
+        )
+
+        # ارسال فایل صوتی
+        await event.reply("🎧 <i>این فایل صوتی برای شماست:</i>", parse_mode='html', file=audio_url)
+
+        # حذف فایل تصویر بعد از ارسال
+        os.remove(img_filename)
+    else:
+        await event.reply("❌ متاسفانه مشکلی پیش آمده است. لطفا دوباره تلاش کنید.")
 
     # اگر پیام متنی نداشت، بیخیال شو
     
