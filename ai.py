@@ -54,8 +54,8 @@ def download_image(img_url):
             image = Image.open(BytesIO(response.content))
             image = image.convert("RGB")  # تبدیل به RGB
             image.thumbnail((800, 800))  # کاهش اندازه تصویر
-            filename = f"estekhare_{uuid.uuid4().hex}.jpg"  # نام تصادفی
-            image.save(filename, format="JPEG", quality=85)  # کیفیت تنظیم شده
+            filename = f"estekhare_{uuid.uuid4().hex}.jpg"  # ایجاد نام تصادفی
+            image.save(filename, format="JPEG", quality=85)  # ذخیره با کیفیت 85
             return filename
     except Exception as e:
         print(f"Error downloading image: {e}")
@@ -726,13 +726,17 @@ async def send_estekhare(event):
     if img_url:
         image_file = download_image(img_url)
         if image_file and os.path.exists(image_file):
-            await event.reply(file=image_file)
-            os.remove(image_file)  # حذف فایل بعد از ارسال
+            try:
+                with open(image_file, "rb") as img:
+                    await event.reply(file=img)  # ارسال فایل از طریق open()
+                os.remove(image_file)  # حذف فایل پس از ارسال موفق
+            except Exception as e:
+                print(f"Error sending image: {e}")
+                await event.reply("خطایی در ارسال تصویر استخاره رخ داد.")
         else:
             await event.reply("خطا در دریافت تصویر استخاره. لطفاً بعداً امتحان کنید.")
     else:
         await event.reply("خطا در دریافت اطلاعات استخاره. لطفاً بعداً امتحان کنید.")
-    
 
 async def main():
     await client.start()
