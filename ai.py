@@ -33,17 +33,22 @@ licenses = [
 ]
 current_index = 0
 
-def get_estekhare_image():
+def download_estekhare_image():
     url = "https://stekhare.onrender.com/s"
     try:
         response = requests.get(url)
         if response.status_code == 200:
             data = response.json()
-            return data.get("url", None)
+            image_url = data.get("url", None)
+            if image_url:
+                img_data = requests.get(image_url).content
+                filename = "estekhare.jpg"
+                with open(filename, "wb") as f:
+                    f.write(img_data)
+                return filename
     except Exception as e:
         print(f"Error fetching estekhare: {e}")
     return None
-
 
 def download_image(img_url, filename="horoscope_image.jpg"):
     img_data = requests.get(img_url).content
@@ -703,11 +708,12 @@ async def handler(event):
         await event.reply("❌ متاسفانه مشکلی پیش آمده است. لطفا دوباره تلاش کنید.")
 
 
-@client.on(events.NewMessage(pattern=r'(?i)^استخاره$'))
+@bot.on(events.NewMessage(pattern=r'(?i)^استخاره$'))
 async def send_estekhare(event):
-    image_url = get_estekhare_image()
-    if image_url:
-        await event.reply(file=image_url)
+    image_file = download_estekhare_image()
+    if image_file:
+        await event.reply(file=image_file)
+        os.remove(image_file)  # حذف فایل بعد از ارسال
     else:
         await event.reply("خطا در دریافت تصویر استخاره. لطفاً بعداً امتحان کنید.")
 
