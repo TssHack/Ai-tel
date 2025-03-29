@@ -47,15 +47,14 @@ def get_estekhare():
     return None
 
 # تابع دانلود و ذخیره تصویر با بازسازی فرمت صحیح
-def download_image(img_url):
+def download_image(img_url, filename="estekhare.jpg"):
     try:
         response = requests.get(img_url, stream=True)
         if response.status_code == 200:
             image = Image.open(BytesIO(response.content))
-            image = image.convert("RGB")  # تبدیل به RGB
-            image.thumbnail((800, 800))  # کاهش اندازه تصویر
-            filename = f"estekhare_{uuid.uuid4().hex}.jpg"  # ایجاد نام تصادفی
-            image.save(filename, format="JPEG", quality=85)  # ذخیره با کیفیت 85
+            image = image.convert("RGB")  # تبدیل به RGB برای جلوگیری از مشکلات فرمت
+            image.thumbnail((800, 800))  # کاهش اندازه تصویر به 800×800 پیکسل
+            image.save(filename, format="JPEG", quality=85)  # ذخیره با کیفیت پایین‌تر
             return filename
     except Exception as e:
         print(f"Error downloading image: {e}")
@@ -728,7 +727,7 @@ async def send_estekhare(event):
         if image_file and os.path.exists(image_file):
             try:
                 with open(image_file, "rb") as img:
-                    await event.reply(file=img)  # ارسال فایل از طریق open()
+                    await event.reply(file=img)  # ارسال با `open()`
                 os.remove(image_file)  # حذف فایل پس از ارسال موفق
             except Exception as e:
                 print(f"Error sending image: {e}")
