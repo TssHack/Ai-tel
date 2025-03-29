@@ -49,6 +49,15 @@ def download_image(img_url, filename="horoscope_image.jpg"):
         handler.write(img_data)
     return filename
 
+def get_random_image():
+    url = 'https://stekhare.onrender.com/s'
+    response = requests.get(url)
+    if response.status_code == 200:
+        data = response.json()
+        return data['url'], data['developer']
+    else:
+        return None, None
+
 
 async def download_and_upload_file(url: str, client: httpx.AsyncClient, event, status_message, file_extension: str, index: int, total_files: int):
     """دانلود و آپلود همزمان فایل"""
@@ -466,6 +475,28 @@ async def handle_message(event):
     message = event.raw_text.strip()
     message_id = event.message.id
     text = event.message.text
+
+
+    if 'استخاره' in user_message:
+        image_url, developer = get_random_image()
+
+        if image_url:
+            # دانلود تصویر از URL
+            image_data = requests.get(image_url).content
+            file_path = f"{developer}_image.jpg"
+
+            # ذخیره تصویر به صورت محلی
+            with open(file_path, 'wb') as f:
+                f.write(image_data)
+
+            # ارسال تصویر به کاربر بدون کپشن
+            await event.reply(file=file_path)
+
+            # حذف فایل پس از ارسال
+            os.remove(file_path)
+        else:
+            await event.reply("متاسفانه در دریافت تصویر خطا رخ داده است.")
+
 
     
     if not text:
