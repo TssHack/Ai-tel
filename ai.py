@@ -47,13 +47,16 @@ def get_estekhare():
     return None
 
 # تابع دانلود و ذخیره تصویر با بازسازی فرمت صحیح
-def download_image(img_url, filename="estekhare.jpg"):
+def download_image(img_url):
     try:
-        response = requests.get(img_url)
-        image = Image.open(BytesIO(response.content))
-        image = image.convert("RGB")  # تبدیل تصویر به RGB
-        image.save(filename, format="JPEG", quality=95)  # ذخیره تصویر با فرمت مناسب
-        return filename
+        response = requests.get(img_url, stream=True)
+        if response.status_code == 200:
+            image = Image.open(BytesIO(response.content))
+            image = image.convert("RGB")  # تبدیل به RGB
+            image.thumbnail((800, 800))  # کاهش اندازه تصویر
+            filename = f"estekhare_{uuid.uuid4().hex}.jpg"  # نام تصادفی
+            image.save(filename, format="JPEG", quality=85)  # کیفیت تنظیم شده
+            return filename
     except Exception as e:
         print(f"Error downloading image: {e}")
     return None
