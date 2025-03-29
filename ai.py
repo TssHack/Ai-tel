@@ -33,23 +33,36 @@ licenses = [
 ]
 current_index = 0
 
-def download_estekhare_image():
+def get_estekhare():
     url = "https://stekhare.onrender.com/s"
+    response = requests.get(url)
     try:
-        response = requests.get(url)
-        if response.status_code == 200:
-            data = response.json()
-            image_url = data.get("url", None)
-            if image_url:
-                img_response = requests.get(image_url)
-                if img_response.status_code == 200:
-                    img = Image.open(BytesIO(img_response.content))
-                    filename = "estekhare.jpg"
-                    img = img.convert("RGB")  # اطمینان از فرمت صحیح
-                    img.save(filename, "JPEG", quality=90)
-                    return filename
+        data = response.json()
+        if "url" in data:
+            return data["url"]
     except Exception as e:
-        print(f"Error fetching estekhare: {e}")
+        print(f"JSON Decode Error: {e}")
+    return None
+
+# تابع دانلود و ذخیره تصویر
+def download_image(img_url, filename="estekhare.jpg"):
+    try:
+        img_data = requests.get(img_url).content
+        with open(filename, 'wb') as handler:
+            handler.write(img_data)
+        return filename
+    except Exception as e:
+        print(f"Error downloading image: {e}")
+    return None
+
+def get_horoscope():
+    url = "https://open.wiki-api.ir/apis-1/Horoscope/?key=Sl6ELFq-nUnpkAE-gCNZqJQ-2W8335T-1SAPzwG"
+    response = requests.get(url)
+    data = response.json()
+
+    if data["detail"]["status"] == "success":
+        horoscope = data["detail"]["data"]
+        return horoscope
     return None
 
 def download_image(img_url, filename="horoscope_image.jpg"):
@@ -57,15 +70,6 @@ def download_image(img_url, filename="horoscope_image.jpg"):
     with open(filename, 'wb') as handler:
         handler.write(img_data)
     return filename
-
-def get_random_image():
-    url = 'https://stekhare.onrender.com/s'
-    response = requests.get(url)
-    if response.status_code == 200:
-        data = response.json()
-        return data['url'], data['developer']
-    else:
-        return None, None
 
 
 async def download_and_upload_file(url: str, client: httpx.AsyncClient, event, status_message, file_extension: str, index: int, total_files: int):
@@ -712,12 +716,16 @@ async def handler(event):
 
 @client.on(events.NewMessage(pattern=r'(?i)^استخاره$'))
 async def send_estekhare(event):
-    image_file = download_estekhare_image()
-    if image_file and os.path.exists(image_file):
-        await event.reply(file=image_file)
-        os.remove(image_file)  # حذف فایل بعد از ارسال
+    img_url = get_estekhare()
+    if img_url:
+        image_file = download_image(img_url)
+        if image_file and os.path.exists(image_file):
+            await event.reply(file=image_file)
+            os.remove(image_file)  # حذف فایل بعد از ارسال
+        else:
+            await event.reply("خطا در دریافت تصویر استخاره. لطفاً بعداً امتحان کنید.")
     else:
-        await event.reply("خطا در دریافت تصویر استخاره. لطفاً بعداً امتحان کنید.")
+        await event.reply("خطا در دریافت اطلاعات استخاره. لطفاً بعداً امتحان کنید.")
 
     
 
