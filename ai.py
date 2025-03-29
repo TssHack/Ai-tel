@@ -721,22 +721,32 @@ async def handler(event):
 
 @client.on(events.NewMessage(pattern=r'(?i)^استخاره$'))
 async def send_estekhare(event):
-    img_url = get_estekhare()
-    if img_url:
-        image_file = download_image(img_url)
-        if image_file and os.path.exists(image_file):
-            try:
-                with open(image_file, "rb") as img:
-                    await event.reply(file=img)  # ارسال با `open()`
-                os.remove(image_file)  # حذف فایل پس از ارسال موفق
-            except Exception as e:
-                print(f"Error sending image: {e}")
-                await event.reply("خطایی در ارسال تصویر استخاره رخ داد.")
+    max_retries = 5  # حداکثر تعداد تلاش‌ها
+    retries = 0
+    while retries < max_retries:
+        img_url = get_estekhare()
+        if img_url:
+            image_file = download_image(img_url)
+            if image_file and os.path.exists(image_file):
+                try:
+                    with open(image_file, "rb") as img:
+                        await event.reply(file=img)  # ارسال با `open()`
+                    os.remove(image_file)  # حذف فایل پس از ارسال موفق
+                    return  # ارسال موفق، خروج از حلقه
+                except Exception as e:
+                    print(f"Error sending image: {e}")
+                    await event.reply(f"خطای پردازش تصویر. تلاش مجدد...")
+                    retries += 1
+                    time.sleep(2)  # زمان تأخیر قبل از تلاش بعدی
+            else:
+                await event.reply("خطا در دریافت تصویر استخاره. لطفاً بعداً امتحان کنید.")
+                return
         else:
-            await event.reply("خطا در دریافت تصویر استخاره. لطفاً بعداً امتحان کنید.")
-    else:
-        await event.reply("خطا در دریافت اطلاعات استخاره. لطفاً بعداً امتحان کنید.")
+            await event.reply("خطا در دریافت اطلاعات استخاره. لطفاً بعداً امتحان کنید.")
+            return
 
+    # اگر به 5 تلاش رسیدیم و هنوز موفق نشدیم
+    await event.reply("متاسفانه بعد از 5 تلاش نتواستیم تصویر استخاره را ارسال کنیم. لطفاً بعداً دوباره امتحان کنید.")
 async def main():
     await client.start()
     print("🤖 ربات فعال شد!")
