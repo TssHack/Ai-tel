@@ -33,15 +33,17 @@ licenses = [
 ]
 current_index = 0
 
-def get_horoscope():
-    url = "https://open.wiki-api.ir/apis-1/Horoscope/?key=Sl6ELFq-nUnpkAE-gCNZqJQ-2W8335T-1SAPzwG"
-    response = requests.get(url)
-    data = response.json()
-
-    if data["detail"]["status"] == "success":
-        horoscope = data["detail"]["data"]
-        return horoscope
+def get_estekhare_image():
+    url = "https://stekhare.onrender.com/s"
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            data = response.json()
+            return data.get("url", None)
+    except Exception as e:
+        print(f"Error fetching estekhare: {e}")
     return None
+
 
 def download_image(img_url, filename="horoscope_image.jpg"):
     img_data = requests.get(img_url).content
@@ -471,35 +473,11 @@ async def handle_message(event):
         return
         
     chat_id = event.chat_id
-    user_message = event.message.text.lower()
     user_id = event.sender_id
     message = event.raw_text.strip()
     message_id = event.message.id
     text = event.message.text
 
-
-    if 'استخاره' in user_message:
-        image_url, developer = get_random_image()
-
-        if image_url:
-            # دانلود تصویر از URL
-            image_data = requests.get(image_url).content
-            file_path = f"{developer}_image.jpg"
-
-            # ذخیره تصویر به صورت محلی
-            with open(file_path, 'wb') as f:
-                f.write(image_data)
-
-            # ارسال تصویر به کاربر بدون کپشن
-            await event.reply(file=file_path)
-
-            # حذف فایل پس از ارسال
-            os.remove(file_path)
-        else:
-            await event.reply("متاسفانه در دریافت تصویر خطا رخ داده است.")
-
-
-    
     if not text:
         return
 
@@ -724,7 +702,15 @@ async def handler(event):
     else:
         await event.reply("❌ متاسفانه مشکلی پیش آمده است. لطفا دوباره تلاش کنید.")
 
-    # اگر پیام متنی نداشت، بیخیال شو
+
+@bot.on(events.NewMessage(pattern=r'(?i)^استخاره$'))
+async def send_estekhare(event):
+    image_url = get_estekhare_image()
+    if image_url:
+        await event.reply(file=image_url)
+    else:
+        await event.reply("خطا در دریافت تصویر استخاره. لطفاً بعداً امتحان کنید.")
+
     
 
 async def main():
