@@ -703,7 +703,7 @@ async def handler(event):
         await event.reply("❌ متاسفانه مشکلی پیش آمده است. لطفا دوباره تلاش کنید.")
 
 
-@bot.on(events.NewMessage(pattern=r'(?i)^استخاره$'))
+@client.on(events.NewMessage(pattern=r'(?i)^استخاره$'))
 async def send_estekhare(event):
     image_url = get_estekhare_image()
     if image_url:
