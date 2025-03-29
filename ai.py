@@ -471,6 +471,7 @@ async def handle_message(event):
         return
         
     chat_id = event.chat_id
+    user_message = event.message.text.lower()
     user_id = event.sender_id
     message = event.raw_text.strip()
     message_id = event.message.id
