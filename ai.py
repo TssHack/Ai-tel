@@ -41,11 +41,13 @@ def download_estekhare_image():
             data = response.json()
             image_url = data.get("url", None)
             if image_url:
-                img_data = requests.get(image_url).content
-                filename = "estekhare.jpg"
-                with open(filename, "wb") as f:
-                    f.write(img_data)
-                return filename
+                img_response = requests.get(image_url)
+                if img_response.status_code == 200:
+                    img = Image.open(BytesIO(img_response.content))
+                    filename = "estekhare.jpg"
+                    img = img.convert("RGB")  # اطمینان از فرمت صحیح
+                    img.save(filename, "JPEG", quality=90)
+                    return filename
     except Exception as e:
         print(f"Error fetching estekhare: {e}")
     return None
@@ -711,7 +713,7 @@ async def handler(event):
 @client.on(events.NewMessage(pattern=r'(?i)^استخاره$'))
 async def send_estekhare(event):
     image_file = download_estekhare_image()
-    if image_file:
+    if image_file and os.path.exists(image_file):
         await event.reply(file=image_file)
         os.remove(image_file)  # حذف فایل بعد از ارسال
     else:
