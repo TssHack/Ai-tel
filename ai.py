@@ -5,6 +5,8 @@ import httpx
 from datetime import datetime
 import aiohttp
 import os
+from PIL import Image
+from io import BytesIO
 from telethon import TelegramClient, events
 from telethon.tl.functions.messages import SendReactionRequest
 from telethon.tl.types import ReactionEmoji
@@ -44,12 +46,13 @@ def get_estekhare():
         print(f"JSON Decode Error: {e}")
     return None
 
-# تابع دانلود و ذخیره تصویر
+# تابع دانلود و ذخیره تصویر با بازسازی فرمت صحیح
 def download_image(img_url, filename="estekhare.jpg"):
     try:
-        img_data = requests.get(img_url).content
-        with open(filename, 'wb') as handler:
-            handler.write(img_data)
+        response = requests.get(img_url)
+        image = Image.open(BytesIO(response.content))
+        image = image.convert("RGB")  # تبدیل تصویر به RGB
+        image.save(filename, format="JPEG", quality=95)  # ذخیره تصویر با فرمت مناسب
         return filename
     except Exception as e:
         print(f"Error downloading image: {e}")
@@ -726,7 +729,6 @@ async def send_estekhare(event):
             await event.reply("خطا در دریافت تصویر استخاره. لطفاً بعداً امتحان کنید.")
     else:
         await event.reply("خطا در دریافت اطلاعات استخاره. لطفاً بعداً امتحان کنید.")
-
     
 
 async def main():
