@@ -21,6 +21,7 @@ client = TelegramClient(session_name, api_id, api_hash)
 robot_status = True
 
 licenses = [
+    "Sl6ELFq-nUnpkAE-gCNZqJQ-2W8335T-1SAPzwG",
     "tmPiWoM-6FXRaLt-GwPgLVH-y6g6dHr-dUyLJi3",
     "0ZVxR67-y7Dd6zh-C2jLE21-kY50NYC-GNxiJod",
     "eLwm3cR-2XegSsv-9l9DCta-q4ng622-EeuAsSy",
