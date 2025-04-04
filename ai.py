@@ -17,6 +17,8 @@ from telethon.tl.types import ReactionEmoji
 api_id = 18377832  # جایگزین شود
 api_hash = "ed8556c450c6d0fd68912423325dd09c"  # جایگزین شود
 session_name = "my_ai"
+admin_id = '6856915102'  # ایدی چت ادمین (ایدی عددی شما)
+allowed_chat_id = '-1002313434152'
 
 client = TelegramClient(session_name, api_id, api_hash)
 
@@ -37,6 +39,27 @@ licenses = [
     "QabJdKR-4VULYJ4-lOqS19N-FOANKGz-ZuysnYH"
 ]
 current_index = 0
+
+approved_users_file = 'approved_users.txt'
+
+# ساخت ربات با استفاده از Telethon
+bot = TelegramClient('chart_bot', api_id, api_hash).start(bot_token=bot_token)
+
+# خواندن کاربران تایید شده از فایل
+def load_approved_users():
+    if os.path.exists(approved_users_file):
+        with open(approved_users_file, 'r') as file:
+            return set(line.strip() for line in file.readlines())
+    return set()
+
+# ذخیره کاربران تایید شده در فایل
+def save_approved_users():
+    with open(approved_users_file, 'w') as file:
+        for user_id in approved_users:
+            file.write(f"{user_id}\n")
+
+# مجموعه ای از کاربران تایید شده
+approved_users = load_approved_users(
 
 def get_estekhare():
     url = "https://stekhare.onrender.com/s"
@@ -490,7 +513,21 @@ async def handle_message(event):
     if not robot_status:
         # اگر ربات خاموش باشد، هیچ پاسخی ارسال نمی‌شود
         return
-        
+
+    if event.chat_id != allowed_chat_id:
+        return
+
+    # بررسی اینکه آیا پیام ریپلای است
+    if event.is_reply and event.sender_id == admin_id:  # فقط ریپلای از ادمین رو بررسی کن
+        # بررسی اینکه آیا پیام ادمین دستور 'bot' است
+        replied_user = await event.get_reply_message()
+        if replied_user:
+            # تایید کردن کاربر و ذخیره ID آن
+            approved_users.add(replied_user.sender_id)
+            save_approved_users()  # ذخیره تغییرات در فایل
+            await event.reply(f"کاربر {replied_user.sender_id} تایید شد و می‌تواند از ربات استفاده کند.")
+
+    
     chat_id = event.chat_id
     user_id = event.sender_id
     message = event.raw_text.strip()
