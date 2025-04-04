@@ -754,14 +754,39 @@ async def save_media_manual(event):
     else:
         await event.reply("⚠️ لطفاً روی **یک پیام دارای مدیا** ریپلای کنید.")
 
-@client.on(events.NewMessage())
+@client.on(events.NewMessage(incoming=True))
 async def auto_save_self_destruct_media(event):
-    """ذخیره **فقط** مدیاهای تایم‌دار در سیو مسیج"""
+    """ذخیره خودکار **فقط** مدیاهای تایم‌دار (عکس و ویدیو) در Saved Messages"""
     
-    # بررسی اینکه پیام دارای مدیاست و تایم‌دار است
-    if event.media and hasattr(event.media, "ttl_seconds"):
-        file_path = await event.download_media()
-        await client.send_file("me", file_path, caption="📥 مدیای تایم‌دار ذخیره شد.")
+    # بررسی اینکه پیام شامل عکس تایم‌دار باشد
+    if event.photo and hasattr(event.photo, "ttl_seconds"):
+        file_name = f"downloads/photo-{random.randint(1000, 9999999)}.png"
+        await event.download_media(file=file_name)  # دانلود عکس
+        
+        # ارسال عکس به سیو مسیج
+        await client.send_file(
+            "me", 
+            file_name, 
+            caption=f"🥸 @Abj0o {event.date} | Time: {event.photo.ttl_seconds}s"
+        )
+
+        os.remove(file_name)  # حذف فایل پس از ارسال
+        print(f"✅ عکس تایم‌دار ذخیره شد: {file_name}")
+
+    # بررسی اینکه پیام شامل ویدیوی تایم‌دار باشد
+    elif event.video and hasattr(event.video, "ttl_seconds"):
+        file_name = f"downloads/video-{random.randint(1000, 9999999)}.mp4"
+        await event.download_media(file=file_name)  # دانلود ویدیو
+        
+        # ارسال ویدیو به سیو مسیج
+        await client.send_file(
+            "me", 
+            file_name, 
+            caption=f"🥸 @Abj0o {event.date} | Time: {event.video.ttl_seconds}s"
+        )
+
+        os.remove(file_name)  # حذف فایل پس از ارسال
+        print(f"✅ ویدیوی تایم‌دار ذخیره شد: {file_name}")
 
 async def main():
     await client.start()
