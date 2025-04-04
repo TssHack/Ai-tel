@@ -517,7 +517,7 @@ async def handle_message(event):
                     async with aiofiles.open(file_name, 'wb') as f:
                         await f.write(await resp.read())
 
-                    await bot.send_file(
+                    await client.send_file(
                         event.chat_id,
                         file=file_name,
                         caption=f"چارت {symbol} - تایم‌فریم {timeframe}",
