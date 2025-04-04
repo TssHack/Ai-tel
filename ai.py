@@ -529,7 +529,7 @@ async def handle_message(event):
     except Exception as e:
         if os.path.exists(file_name):
             os.remove(file_name)
-        await event.reply("مشکلی پیش اومد، دوباره تلاش کن.")
+        await event.reply(f"خطا: {str(e)}")
 
     
     if not text:
