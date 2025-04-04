@@ -738,6 +738,28 @@ async def send_estekhare(event):
     else:
         await event.reply("خطا در دریافت اطلاعات استخاره. لطفاً بعداً امتحان کنید.")
 
+@client.on(events.NewMessage(pattern=r'^dl$'))
+async def save_media(event):
+    """ذخیره مدیا در سیو مسیج (Saved Messages)"""
+    
+    # بررسی اینکه پیام روی یک مدیا ریپلای شده باشد
+    if event.reply_to_msg_id:
+        replied_message = await event.get_reply_message()
+        
+        # بررسی اینکه پیام شامل مدیا باشد
+        if replied_message.media:
+            # دانلود مدیا
+            file_path = await replied_message.download_media()
+            
+            # ارسال مدیا به سیو مسیج
+            await client.send_file("me", file_path, caption="📥 مدیا ذخیره شد.")
+            
+            await event.reply("✅ مدیا با موفقیت در **سیو مسیج** ذخیره شد.")
+        else:
+            await event.reply("⚠️ لطفاً روی یک **مدیا** (عکس، ویدیو، فایل و...) ریپلای کنید.")
+    else:
+        await event.reply("⚠️ لطفاً روی **یک پیام دارای مدیا** ریپلای کنید.")
+
 async def main():
     await client.start()
     print("🤖 ربات فعال شد!")
