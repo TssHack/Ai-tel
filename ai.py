@@ -80,6 +80,24 @@ def download_image(img_url, filename="horoscope_image.jpg"):
     return filename
 
 
+async def fetch_chart(symbol: str, timeframe: str = '1h') -> str:
+    """
+    گرفتن چارت از API و ذخیره موقت فایل در سیستم
+    خروجی: مسیر فایل PNG ذخیره‌شده
+    """
+    chart_url = f"https://chart-ehsan.onrender.com/chart?symbol={symbol}&timeframe={timeframe}"
+    file_name = f"{uuid.uuid4().hex}.png"
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(chart_url) as resp:
+            if resp.status == 200:
+                async with aiofiles.open(file_name, 'wb') as f:
+                    await f.write(await resp.read())
+                return file_name
+            else:
+                raise Exception("خطا در دریافت چارت از API")
+
+
 async def download_and_upload_file(url: str, client: httpx.AsyncClient, event, status_message, file_extension: str, index: int, total_files: int):
     """دانلود و آپلود همزمان فایل"""
     try:
@@ -497,42 +515,6 @@ async def handle_message(event):
     message_id = event.message.id
     text = event.message.text
 
-    if not text.lower().startswith('search?'):
-        return  # فقط پیام‌هایی که با search? شروع میشن بررسی کن
-
-    parts = text[7:].strip().split()
-    if not parts:
-        return await event.reply("فرمت اشتباهه. استفاده کن: `search? BTCUSDT 1h`", parse_mode='markdown')
-
-    symbol = parts[0].upper()
-    timeframe = parts[1] if len(parts) > 1 else '1h'
-
-    chart_url = f"https://chart-ehsan.onrender.com/chart?symbol={symbol}&timeframe={timeframe}"
-    file_name = f"{uuid.uuid4().hex}.png"  # اسم یکتا برای فایل موقتی
-
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(chart_url) as resp:
-                if resp.status == 200:
-                    async with aiofiles.open(file_name, 'wb') as f:
-                        await f.write(await resp.read())
-
-                    await client.send_file(
-                        event.chat_id,
-                        file=file_name,
-                        caption=f"چارت {symbol} - تایم‌فریم {timeframe}",
-                        reply_to=event.id
-                    )
-
-                    os.remove(file_name)  # حذف فایل بعد از ارسال
-                else:
-                    await event.reply("خطا در دریافت چارت! ورودی رو بررسی کن.")
-    except Exception as e:
-        if os.path.exists(file_name):
-            os.remove(file_name)
-        await event.reply(f"خطا: {str(e)}")
-
-    
     if not text:
         return
 
@@ -825,6 +807,34 @@ async def auto_save_self_destruct_media(event):
 
         os.remove(file_name)  # حذف فایل پس از ارسال
         print(f"✅ ویدیوی تایم‌دار ذخیره شد: {file_name}")
+        
+@client.on(events.NewMessage(func=lambda e: e.raw_text.strip().lower().startswith('search?')))
+async def handle_search(event):
+    text = event.raw_text.strip()
+    
+    parts = text[7:].strip().split()
+    if not parts:
+        return await event.reply("فرمت اشتباهه. استفاده کن: `search? BTCUSDT 1h`", parse_mode='markdown')
+
+    symbol = parts[0].upper()
+    timeframe = parts[1] if len(parts) > 1 else '1h'
+
+    try:
+        file_path = await fetch_chart(symbol, timeframe)
+
+        await client.send_file(
+            event.chat_id,
+            file=file_path,
+            caption=f"چارت {symbol} - تایم‌فریم {timeframe}",
+            reply_to=event.id
+        )
+
+        os.remove(file_path)
+
+    except Exception as e:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        await event.reply(f"خطا: {str(e)}")
 
 async def main():
     await client.start()
