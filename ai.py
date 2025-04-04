@@ -514,18 +514,16 @@ async def handle_message(event):
         # اگر ربات خاموش باشد، هیچ پاسخی ارسال نمی‌شود
         return
 
-    if event.chat_id != allowed_chat_id:
-        return
-
-    # بررسی اینکه آیا پیام ریپلای است
-    if event.is_reply and event.sender_id == admin_id:  # فقط ریپلای از ادمین رو بررسی کن
-        # بررسی اینکه آیا پیام ادمین دستور 'bot' است
-        replied_user = await event.get_reply_message()
-        if replied_user:
-            # تایید کردن کاربر و ذخیره ID آن
-            approved_users.add(replied_user.sender_id)
-            save_approved_users()  # ذخیره تغییرات در فایل
-            await event.reply(f"کاربر {replied_user.sender_id} تایید شد و می‌تواند از ربات استفاده کند.")
+    if event.chat_id == allowed_chat_id and event.is_reply and event.sender_id == int(admin_id):
+        if event.raw_text.strip().lower() == 'bot':
+            replied_msg = await event.get_reply_message()
+            if replied_msg:
+                target_user_id = replied_msg.sender_id
+                approved_users.add(target_user_id)
+                save_approved_users()
+                # ادیت پیام ادمین با پیام تایید
+                await event.edit(f"کاربر با آیدی `{target_user_id}` تایید شد و اکنون می‌تواند از ربات استفاده کند.", parse_mode='markdown')
+            return
 
     
     chat_id = event.chat_id
