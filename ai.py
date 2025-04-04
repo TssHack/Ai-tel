@@ -59,7 +59,7 @@ def save_approved_users():
             file.write(f"{user_id}\n")
 
 # مجموعه ای از کاربران تایید شده
-approved_users = load_approved_users(
+approved_users = load_approved_users()
 
 def get_estekhare():
     url = "https://stekhare.onrender.com/s"
