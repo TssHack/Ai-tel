@@ -43,7 +43,7 @@ current_index = 0
 approved_users_file = 'approved_users.txt'
 
 # ساخت ربات با استفاده از Telethon
-bot = TelegramClient('chart_bot', api_id, api_hash).start(bot_token=bot_token)
+
 
 # خواندن کاربران تایید شده از فایل
 def load_approved_users():
