@@ -755,10 +755,11 @@ async def save_media_manual(event):
         await event.reply("⚠️ لطفاً روی **یک پیام دارای مدیا** ریپلای کنید.")
 
 @client.on(events.NewMessage())
-async def auto_save_media(event):
-    """شناسایی و ذخیره **خودکار** مدیاهای تایم‌دار"""
+async def auto_save_self_destruct_media(event):
+    """ذخیره **فقط** مدیاهای تایم‌دار در سیو مسیج"""
     
-    if event.media and hasattr(event.media, "ttl_seconds"):  # بررسی مدیای خود-تخریب
+    # بررسی اینکه پیام دارای مدیاست و تایم‌دار است
+    if event.media and hasattr(event.media, "ttl_seconds"):
         file_path = await event.download_media()
         await client.send_file("me", file_path, caption="📥 مدیای تایم‌دار ذخیره شد.")
 
