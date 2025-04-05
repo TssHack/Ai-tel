@@ -97,202 +97,46 @@ async def fetch_chart(symbol: str, timeframe: str = '1h') -> str:
             else:
                 raise Exception("خطا در دریافت چارت از API")
 
+async def download_instagram_video(post_url, save_as="video.mp4", progress_callback=None):
+    api_url = f"https://esiig.vercel.app/api/video?postUrl={post_url}"
 
-async def download_and_upload_file(url: str, client: httpx.AsyncClient, event, status_message, file_extension: str, index: int, total_files: int):
-    """دانلود و آپلود همزمان فایل"""
-    try:
-        temp_filename = f"temp_{hash(url)}_{datetime.now().timestamp()}{file_extension}"
-        response = await client.get(url, follow_redirects=True)
-        
-        if response.status_code != 200:
-            await status_message.edit(f"❌ خطا در دانلود فایل {index} - وضعیت: {response.status_code}")
-            return
-
-        total_size = int(response.headers.get('content-length', 0))
-        downloaded = 0
-        last_update_time = 0
-        
-        # دانلود فایل
-        with open(temp_filename, 'wb') as f:
-            async for chunk in response.aiter_bytes(chunk_size=8192):
-                f.write(chunk)
-                downloaded += len(chunk)
-                
-                current_time = asyncio.get_event_loop().time()
-                if current_time - last_update_time > 0.5 and total_size > 0:
-                    last_update_time = current_time
-                    percentage = (downloaded / total_size) * 100
-                    progress_bar = create_progress_bar(percentage)
-                    size_mb = downloaded / (1024 * 1024)
-                    total_mb = total_size / (1024 * 1024)
-                    await status_message.edit(
-                        f"📥 درحال دانلود فایل {index} از {total_files}...\n"
-                        f"{progress_bar}\n"
-                        f"💾 {size_mb:.1f}MB / {total_mb:.1f}MB"
-                    )
-
-        # آپلود فایل
-        try:
-            last_update_time = 0
-            
-            async def progress_callback(current, total):
-                nonlocal last_update_time
-                current_time = asyncio.get_event_loop().time()
-                
-                if current_time - last_update_time > 0.5:
-                    last_update_time = current_time
-                    percentage = (current / total) * 100
-                    progress_bar = create_progress_bar(percentage)
-                    size_mb = current / (1024 * 1024)
-                    total_mb = total / (1024 * 1024)
-                    await status_message.edit(
-                        f"📤 درحال آپلود فایل {index} از {total_files}...\n"
-                        f"{progress_bar}\n"
-                        f"💾 {size_mb:.1f}MB / {total_mb:.1f}MB"
-                    )
-
-            # ارسال فایل با ریپلای به پیام اصلی
-            await event.client.send_file(
-                event.chat_id,
-                file=temp_filename,
-                reply_to=event.message.id,
-                supports_streaming=True if file_extension == '.mp4' else None,
-                progress_callback=progress_callback
-            )
-
-        finally:
-            if os.path.exists(temp_filename):
-                os.remove(temp_filename)
-
-    except Exception as e:
-        # چاپ پیغام خطا برای بررسی دقیق‌تر
-        print(f"خطا در پردازش فایل {index}: {str(e)}")
-        await status_message.edit(f"❌ خطا در پردازش فایل {index}: {str(e)}")
-
-def create_progress_bar(percentage: float, width: int = 25) -> str:
-    """ایجاد نوار پیشرفت"""
-    filled = int(width * percentage / 100)
-    empty = width - filled
-    bar = '━' * filled + '─' * empty
-    return f"[{bar}] {percentage:.1f}%"
-
-async def process_instagram_link(event, message: str, status_message):
-    """پردازش یک لینک اینستاگرام"""
-    async with httpx.AsyncClient(timeout=60.0) as http_client:
-        for attempt in range(2):  # دو بار تلاش
-            try:
-                # استفاده از آدرس API برای دریافت لینک‌های رسانه‌ای
-                api_url = f"https://insta-ehsan.onrender.com/ehsan?url={message}"
-                response = await http_client.get(api_url)
-                
-                # تبدیل پاسخ به JSON
-                try:
-                    data = response.json()
-                    if isinstance(data, dict) and "data" in data:
-                        for index, item in enumerate(data["data"], 1):
-                            # بررسی داده‌ها
-                            if "media" in item:
-                                media_url = item["media"]
-                                media_type = item["type"]
-                                file_extension = '.jpg' if media_type == "photo" else '.mp4'
-                                
-                                # دانلود و ارسال فایل‌ها
-                                await download_and_upload_file(
-                                    media_url,
-                                    http_client,
-                                    event,
-                                    status_message,
-                                    file_extension,
-                                    index,
-                                    len(data["data"])
-                                )
-                            else:
-                                await status_message.edit(f"❌ فایل {index} فاقد لینک رسانه است.")
-                    else:
-                        await status_message.edit("❌ داده‌ها به درستی دریافت نشدند.")
-                        return
-                except ValueError:
-                    await status_message.edit("❌ خطا در تبدیل پاسخ به JSON")
-                    return
-
-                # در صورت موفقیت
-                await status_message.edit("✅ عملیات با موفقیت انجام شد!")
-                await asyncio.sleep(3)
-                await status_message.delete()
-                return  # خروج از تابع در صورت موفقیت
-
-            except Exception as e:
-                print(f"خطا در پردازش لینک (تلاش {attempt + 1}): {e}")
-                if attempt == 0:  # اگر تلاش اول بود
-                    await status_message.edit("❌ مشکل در پردازش. در حال تلاش مجدد...")
-                    await asyncio.sleep(2)
-                else:  # اگر تلاش دوم بود
-                    await status_message.edit(f"❌ خطا در پردازش فایل {index}: {str(e)}")
-
-
-async def process_instagram_link(event, message: str, status_message):
-    """پردازش یک لینک اینستاگرام"""
-    async with httpx.AsyncClient(timeout=60.0) as http_client:
-        for attempt in range(2):  # دو بار تلاش
-            try:
-                # استفاده از آدرس API برای دریافت لینک‌های رسانه‌ای
-                api_url = f"https://insta-ehsan.onrender.com/ehsan?url={message}"
-                response = await http_client.get(api_url)
-                
-                # تبدیل پاسخ به JSON
-                try:
-                    data = response.json()
-                    if isinstance(data, dict) and "data" in data:
-                        for index, item in enumerate(data["data"], 1):
-                            # بررسی داده‌ها
-                            if "media" in item:
-                                media_url = item["media"]
-                                media_type = item["type"]
-                                file_extension = '.jpg' if media_type == "photo" else '.mp4'
-                                
-                                # دانلود و ارسال فایل‌ها
-                                await download_and_upload_file(
-                                    media_url,
-                                    http_client,
-                                    event,
-                                    status_message,
-                                    file_extension,
-                                    index,
-                                    len(data["data"])
-                                )
-                            else:
-                                await status_message.edit(f"❌ فایل {index} فاقد لینک رسانه است.")
-                    else:
-                        await status_message.edit("❌ داده‌ها به درستی دریافت نشدند.")
-                        return
-                except ValueError:
-                    await status_message.edit("❌ خطا در تبدیل پاسخ به JSON")
-                    return
-
-                # در صورت موفقیت
-                await status_message.edit("✅ عملیات با موفقیت انجام شد!")
-                await asyncio.sleep(3)
-                await status_message.delete()
-                return  # خروج از تابع در صورت موفقیت
-
-            except Exception as e:
-                print(f"خطا در پردازش لینک (تلاش {attempt + 1}): {e}")
-                if attempt == 0:  # اگر تلاش اول بود
-                    await status_message.edit("❌ مشکل در پردازش. در حال تلاش مجدد...")
-                    await asyncio.sleep(2)
-                else:  # اگر تلاش دوم بود
-                    await status_message.edit("❌ مشکل در پردازش. لطفا بعداً تلاش کنید.")
-
-async def fetch_instagram_data(url):
-    """ دریافت اطلاعات از API اینستاگرام """
+    # درخواست به API
     async with aiohttp.ClientSession() as session:
-        try:
-            async with session.get(f"https://insta-ehsan.onrender.com/ehsan?url={url}") as response:
-                if response.status == 200:
-                    return await response.json()
-        except Exception as e:
-            print(f"خطا در دریافت اطلاعات اینستاگرام: {e}")
-    return None
+        async with session.get(api_url) as response:
+            response.raise_for_status()
+            data = await response.json()
+
+    if data.get("status") != "success":
+        raise Exception("API Error")
+
+    # لینک ویدیو
+    video_url = data["data"]["videoUrl"]
+
+    # دانلود فایل با stream و callback برای نمایش پیشرفت
+    async with aiohttp.ClientSession() as session:
+        async with session.get(video_url) as r:
+            r.raise_for_status()
+            total = int(r.headers.get('content-length', 0))
+            downloaded = 0
+
+            with open(save_as, 'wb') as f:
+                async for chunk in r.content.iter_any(8192):
+                    if chunk:
+                        f.write(chunk)
+                        downloaded += len(chunk)
+                        if progress_callback:
+                            progress_callback(downloaded, total)
+
+# تابع برای نمایش نوار پیشرفت دانلود
+def get_progress_bar(current, total, width=30):
+    if total == 0:
+        return "[در حال آماده‌سازی...]"
+    progress = int(width * current / total)
+    bar = "█" * progress + "░" * (width - progress)
+    percent = math.ceil((current / total) * 100)
+    return f"[{bar}] {percent}%"
+
+
 
 async def process_link(url):
     api_url = f"https://pp-don-63v4.onrender.com/?url={url}"  # آدرس API جدید
@@ -515,46 +359,7 @@ async def handle_message(event):
     message_id = event.message.id
     text = event.message.text
 
-    if not text:
-        return
-
-    # **تشخیص لینک اینستاگرام داخل هندلر**
-    insta_pattern = r'https?://(www\.)?instagram\.com/\S+'
-    insta_match = re.search(insta_pattern, text)
-
-    if insta_match:
-        insta_link = insta_match.group(0)  # لینک اینستاگرام رو از متن استخراج کن
-
-        # نمایش اکشن "در حال پردازش..."
-        async with client.action(event.chat_id, "typing"):
-            data = await fetch_instagram_data(insta_link)
-
-        if data and "data" in data:
-            media_files = []  # لیستی برای ذخیره لینک‌های دانلود
-
-            for item in data["data"]:
-                media_url = item.get("media")
-                media_type = item.get("type")  # نوع محتوا: photo یا video
-                
-                if media_url and media_type:
-                    # برای ویدیو
-                    if media_type == "video":
-                        download_link = f'<a href="{media_url}">دانلود مستقیم</a>'
-                        media_files.append(f"{download_link}")
-                    # برای عکس
-                    elif media_type == "photo":
-                        download_link = f'<a href="{media_url}">دانلود</a>'
-                        media_files.append(f"برای دانلود عکس روی لینک زیر کلیک کنید:\n{download_link}")
-                    else:
-                        continue  # اگر نوع ناشناخته بود، رد کن
-
-            # ارسال لینک‌های دانلود به صورت جداگانه
-            if media_files:
-                for file_link in media_files:
-                    await event.reply(file_link, parse_mode="html")
-
-        return
-
+    
     # جستجو در SoundCloud
     if message.lower().startswith("ehsan "):
         query = message[6:].strip()
@@ -701,13 +506,43 @@ async def handle_message(event):
         except Exception as e:
             await event.reply(f"❗️ خطا در ارسال فایل: {str(e)}")
                 
+@client.on(events.NewMessage(pattern=r'(https?://(www\.)?instagram\.com/reel/[^ \n]+)'))
+async def handler(event):
+    url = re.search(r'(https?://(www\.)?instagram\.com/reel/[^ \n]+)', event.raw_text).group(1)
+    message = await event.reply("در حال دریافت اطلاعات...")
 
-@client.on(events.NewMessage(pattern=r'.*instagram\.com.*'))
-async def handle_instagram(event):
-    """پردازش لینک‌های اینستاگرام"""
-    message = event.message.text
-    status_message = await event.reply("🔄 در حال پردازش لینک... لطفا صبر کنید.")
-    await process_instagram_link(event, message, status_message)
+    temp_path = "downloaded.mp4"
+
+    try:
+        # callback برای نمایش وضعیت پیشرفت دانلود
+        async def download_progress(downloaded, total):
+            bar = get_progress_bar(downloaded, total)
+            await message.edit(f"دانلود ویدیو...\n{bar}")
+
+        # اجرای تابع دانلود در thread جداگانه
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, lambda: download_instagram_video(url, temp_path, lambda d, t: asyncio.run_coroutine_threadsafe(download_progress(d, t), loop)))
+
+        # callback برای وضعیت آپلود
+        async def upload_progress(current, total):
+            bar = get_progress_bar(current, total)
+            await message.edit(f"آپلود ویدیو...\n{bar}")
+
+        # آپلود و ارسال فایل با progress
+        async with client.action(event.chat_id, 'upload_video'):
+            await client.send_file(
+                event.chat_id,
+                file=temp_path,
+                reply_to=event.id,
+                progress_callback=upload_progress,
+                attributes=[DocumentAttributeVideo(duration=0, w=720, h=1280, supports_streaming=True)]
+            )
+
+        await message.delete()
+        os.remove(temp_path)
+
+    except Exception as e:
+        await message.edit(f"خطا در فرآیند: {e}")
 
 @client.on(events.NewMessage(pattern='^فال'))
 async def handler(event):
