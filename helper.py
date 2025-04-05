@@ -53,12 +53,22 @@ async def handle_callback(client, callback_query):
 
     if description:
         await callback_query.answer()
-        await callback_query.message.edit_text(
-            f"<b>راهنمای قابلیت:</b>\n\n{description}",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("🔙 بازگشت به پنل", switch_inline_query_current_chat="")]
-            ])
-        )
+        
+        # چک کردن اینکه پیام موجود است
+        if callback_query.message:
+            await callback_query.message.edit_text(
+                f"<b>راهنمای قابلیت:</b>\n\n{description}",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("🔙 بازگشت به پنل", switch_inline_query_current_chat="")]
+                ])
+            )
+        else:
+            await callback_query.message.reply_text(
+                f"<b>راهنمای قابلیت:</b>\n\n{description}",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("🔙 بازگشت به پنل", switch_inline_query_current_chat="")]
+                ])
+            )
     else:
         await callback_query.answer("❌ این بخش پیدا نشد!", show_alert=True)
 
