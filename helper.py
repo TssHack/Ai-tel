@@ -39,7 +39,6 @@ async def answer_inline(client, inline_query):
         description="دریافت توضیح تمام قابلیت‌های ربات شما",
         input_message_content=InputTextMessageContent(
             "🧠 پنل راهنمای ربات:\n\nبرای مشاهده توضیح هر بخش روی دکمه‌های زیر کلیک کنید.",
-            parse_mode="html"
         ),
         reply_markup=keyboard
     )
