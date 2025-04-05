@@ -667,6 +667,7 @@ async def handler(event):
                 await message.edit(f"دانلود ویدیو...\n{bar}")
                 last_download_edit = downloaded
 
+        # اضافه کردن await برای فراخوانی ناهمگام
         await download_instagram_video(url, save_as=temp_path, progress_callback=download_progress)
 
         # وضعیت آپلود
