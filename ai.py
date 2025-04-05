@@ -848,7 +848,7 @@ async def handle_panel(event):
         else:
             await event.reply("❌ هیچ نتیجه‌ای از ربات راهنما دریافت نشد.")
     except Exception as e:
-        await event.reply(f"⚠️ خطا در ارسال اینلاین کوئری:\n{str(e)}")چ
+        await event.reply(f"⚠️ خطا در ارسال اینلاین کوئری:\n{str(e)}")
 
 async def main():
     await client.start()
