@@ -1,0 +1,8 @@
+aiofiles
+math
+uuid
+requests
+httpx
+aiohttp
+Pillow
+telethon
