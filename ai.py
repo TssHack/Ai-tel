@@ -836,6 +836,20 @@ async def handle_search(event):
             os.remove(file_path)
         await event.reply(f"خطا: {str(e)}")
 
+@client.on(events.NewMessage(pattern=r'^پنل$'))
+async def handle_panel(event):
+    try:
+        # ارسال اینلاین کوئری به ربات راهنما
+        results = await client.inline_query('@AbjooBot', 'help')
+
+        # ارسال اولین نتیجه به چت فعلی
+        if results:
+            await results[0].click(event.chat_id)
+        else:
+            await event.reply("❌ هیچ نتیجه‌ای از ربات راهنما دریافت نشد.")
+    except Exception as e:
+        await event.reply(f"⚠️ خطا در ارسال اینلاین کوئری:\n{str(e)}")چ
+
 async def main():
     await client.start()
     print("🤖 ربات فعال شد!")
