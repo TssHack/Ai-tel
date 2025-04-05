@@ -139,6 +139,7 @@ async def download_instagram_video(
                         f.write(chunk)
                         downloaded += len(chunk)
                         if progress_callback:
+                            # نمایش نوار پیشرفت دانلود
                             await progress_callback(downloaded, total)
 
 
@@ -692,7 +693,6 @@ async def handler(event):
 
     except Exception as e:
         await message.edit(f"خطا در فرآیند: {e}")
-
 async def main():
     await client.start()
     print("🤖 ربات فعال شد!")
