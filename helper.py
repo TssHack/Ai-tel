@@ -21,7 +21,7 @@ descriptions = {
     "help_chart": "📈 ارسال `search? BTCUSDT 1h` → دریافت چارت لحظه‌ای از بازار کریپتو."
 }
 
-# هندلر اینلاین کوئری
+# پاسخ به کوئری اینلاین
 @app.on_inline_query()
 async def answer_inline(client, inline_query):
     keyboard = InlineKeyboardMarkup([
@@ -38,14 +38,15 @@ async def answer_inline(client, inline_query):
         title="راهنمای ربات",
         description="دریافت توضیح تمام قابلیت‌های ربات شما",
         input_message_content=InputTextMessageContent(
-            "🧠 پنل راهنمای ربات:\n\nبرای مشاهده توضیح هر بخش روی دکمه‌های زیر کلیک کنید.",
+            "🧠 <b>پنل راهنمای ربات:</b>\n\nبرای مشاهده توضیح هر بخش روی دکمه‌های زیر کلیک کنید.",
+            parse_mode="html"
         ),
         reply_markup=keyboard
     )
 
     await inline_query.answer([result], cache_time=1, is_personal=True)
 
-# هندلر دکمه‌ها
+# مدیریت کلیک روی دکمه‌ها
 @app.on_callback_query()
 async def handle_callback(client, callback_query):
     data = callback_query.data
@@ -57,7 +58,7 @@ async def handle_callback(client, callback_query):
             f"<b>راهنمای قابلیت:</b>\n\n{description}",
             parse_mode="html",
             reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("🔙 بازگشت به پنل", switch_inline_query_current_chat="help")]
+                [InlineKeyboardButton("🔙 بازگشت به پنل", switch_inline_query_current_chat="")]
             ])
         )
     else:
