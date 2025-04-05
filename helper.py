@@ -38,8 +38,7 @@ async def answer_inline(client, inline_query):
         title="راهنمای ربات",
         description="دریافت توضیح تمام قابلیت‌های ربات شما",
         input_message_content=InputTextMessageContent(
-            "🧠 <b>پنل راهنمای ربات:</b>\n\nبرای مشاهده توضیح هر بخش روی دکمه‌های زیر کلیک کنید.",
-            parse_mode="html"
+            "🧠 <b>پنل راهنمای ربات:</b>\n\nبرای مشاهده توضیح هر بخش روی دکمه‌های زیر کلیک کنید."
         ),
         reply_markup=keyboard
     )
@@ -55,8 +54,7 @@ async def handle_callback(client, callback_query):
     if description:
         await callback_query.answer()
         await callback_query.message.edit_text(
-            f"<b>راهنمای قابلیت:</b>\n\n{description}",
-            parse_mode="html",
+            f"<b>راهنمای قابلیت:</b>\n\n{description}"
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("🔙 بازگشت به پنل", switch_inline_query_current_chat="")]
             ])
