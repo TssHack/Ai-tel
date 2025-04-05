@@ -106,7 +106,7 @@ def get_progress_bar(current, total, width=30):
         return "[در حال آماده‌سازی...]"
     progress = int(width * current / total)
     bar = "█" * progress + "░" * (width - progress)
-    percent = math.ceil((current / total) * 100)
+    percent = int((current / total) * 100)
     return f"[{bar}] {percent}%"
 
 # تابع برای دانلود ویدیو
@@ -117,30 +117,40 @@ async def download_instagram_video(
 ):
     api_url = f"https://esiig.vercel.app/api/video?postUrl={post_url}"
 
-    async with aiohttp.ClientSession() as session:
-        async with session.get(api_url) as response:
-            response.raise_for_status()
-            data = await response.json()
+    async with httpx.AsyncClient() as client:
+        # درخواست API برای دریافت لینک ویدیو
+        response = await client.get(api_url)
+        response.raise_for_status()
+        data = response.json()
 
     if data.get("status") != "success":
         raise Exception("API Error")
 
     video_url = data["data"]["videoUrl"]
 
-    async with aiohttp.ClientSession() as session:
-        async with session.get(video_url) as r:
-            r.raise_for_status()
-            total = int(r.headers.get('content-length', 0))
+    # دانلود ویدیو
+    async with httpx.AsyncClient() as client:
+        async with client.stream("GET", video_url) as response:
+            response.raise_for_status()
+            total = int(response.headers.get('content-length', 0))
             downloaded = 0
 
             with open(save_as, 'wb') as f:
-                async for chunk in r.content.iter_any(8192):
+                async for chunk in response.iter_bytes(8192):
                     if chunk:
                         f.write(chunk)
                         downloaded += len(chunk)
                         if progress_callback:
-                            # نمایش نوار پیشرفت دانلود
                             await progress_callback(downloaded, total)
+
+# تابع برای مدیریت دانلود و ارسال پیشرفت
+async def download_progress(downloaded, total):
+    bar = get_progress_bar(downloaded, total)
+    print(f"دانلود ویدیو...\n{bar}")
+
+# مثال استفاده از تابع
+post_url = "https://www.instagram.com/reel/xyz/"  # لینک پست
+await download_instagram_video(post_url, save_as="downloaded_video.mp4", progress_callback=download_progress)
 
 
 
