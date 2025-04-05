@@ -1,5 +1,6 @@
 aiofiles
 uuid
+pyrogram
 requests
 httpx
 aiohttp
