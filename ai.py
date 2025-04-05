@@ -7,6 +7,7 @@ import requests
 import httpx
 from datetime import datetime
 import aiohttp
+from typing import Callable, Awaitable
 import os
 from PIL import Image
 from io import BytesIO
