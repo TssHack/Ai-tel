@@ -98,10 +98,24 @@ async def fetch_chart(symbol: str, timeframe: str = '1h') -> str:
             else:
                 raise Exception("خطا در دریافت چارت از API")
 
-async def download_instagram_video(post_url, save_as="video.mp4", progress_callback=None):
+
+# تابع برای نمایش نوار پیشرفت دانلود
+def get_progress_bar(current, total, width=30):
+    if total == 0:
+        return "[در حال آماده‌سازی...]"
+    progress = int(width * current / total)
+    bar = "█" * progress + "░" * (width - progress)
+    percent = math.ceil((current / total) * 100)
+    return f"[{bar}] {percent}%"
+
+# تابع برای دانلود ویدیو
+async def download_instagram_video(
+    post_url: str,
+    save_as: str = "video.mp4",
+    progress_callback: Callable[[int, int], Awaitable[None]] = None
+):
     api_url = f"https://esiig.vercel.app/api/video?postUrl={post_url}"
 
-    # درخواست به API
     async with aiohttp.ClientSession() as session:
         async with session.get(api_url) as response:
             response.raise_for_status()
@@ -110,10 +124,8 @@ async def download_instagram_video(post_url, save_as="video.mp4", progress_callb
     if data.get("status") != "success":
         raise Exception("API Error")
 
-    # لینک ویدیو
     video_url = data["data"]["videoUrl"]
 
-    # دانلود فایل با stream و callback برای نمایش پیشرفت
     async with aiohttp.ClientSession() as session:
         async with session.get(video_url) as r:
             r.raise_for_status()
@@ -126,16 +138,7 @@ async def download_instagram_video(post_url, save_as="video.mp4", progress_callb
                         f.write(chunk)
                         downloaded += len(chunk)
                         if progress_callback:
-                            progress_callback(downloaded, total)
-
-# تابع برای نمایش نوار پیشرفت دانلود
-def get_progress_bar(current, total, width=30):
-    if total == 0:
-        return "[در حال آماده‌سازی...]"
-    progress = int(width * current / total)
-    bar = "█" * progress + "░" * (width - progress)
-    percent = math.ceil((current / total) * 100)
-    return f"[{bar}] {percent}%"
+                            await progress_callback(downloaded, total)
 
 
 
@@ -652,32 +655,39 @@ async def handler(event):
     temp_path = "downloaded.mp4"
 
     try:
-        # callback برای نمایش وضعیت پیشرفت دانلود
-        async def download_progress(downloaded, total):
-            bar = get_progress_bar(downloaded, total)
-            await message.edit(f"دانلود ویدیو...\n{bar}")
+        # وضعیت دانلود
+        last_download_edit = 0
 
-        # اجرای تابع دانلود و نمایش پیشرفت
+        async def download_progress(downloaded, total):
+            nonlocal last_download_edit
+            if downloaded - last_download_edit > 512000 or downloaded == total:
+                bar = get_progress_bar(downloaded, total)
+                await message.edit(f"دانلود ویدیو...\n{bar}")
+                last_download_edit = downloaded
+
         await download_instagram_video(url, save_as=temp_path, progress_callback=download_progress)
 
-        # callback برای وضعیت آپلود
+        # وضعیت آپلود
+        last_upload_edit = 0
+
         async def upload_progress(current, total):
-            bar = get_progress_bar(current, total)
-            await message.edit(f"آپلود ویدیو...\n{bar}")
+            nonlocal last_upload_edit
+            if current - last_upload_edit > 512000 or current == total:
+                bar = get_progress_bar(current, total)
+                await message.edit(f"آپلود ویدیو...\n{bar}")
+                last_upload_edit = current
 
-        # ارسال فایل به کاربر با progress بار
-        async with client.action(event.chat_id, 'upload_video'):
-            await client.send_file(
-                event.chat_id,
-                file=temp_path,
-                reply_to=event.id,
-                progress_callback=upload_progress,
-                attributes=[DocumentAttributeVideo(duration=0, w=720, h=1280, supports_streaming=True)]
-            )
+        await client.send_file(
+            event.chat_id,
+            file=temp_path,
+            reply_to=event.id,
+            progress_callback=upload_progress,
+            attributes=[DocumentAttributeVideo(w=720, h=1280, supports_streaming=True)]
+        )
 
-        # حذف فایل موقتی بعد از ارسال
         await message.delete()
-        os.remove(temp_path)
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
 
     except Exception as e:
         await message.edit(f"خطا در فرآیند: {e}")
