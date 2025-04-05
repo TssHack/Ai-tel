@@ -643,33 +643,43 @@ async def auto_save_self_destruct_media(event):
         os.remove(file_name)  # حذف فایل پس از ارسال
         print(f"✅ ویدیوی تایم‌دار ذخیره شد: {file_name}")
         
-@client.on(events.NewMessage(func=lambda e: e.raw_text.strip().lower().startswith('search?')))
-async def handle_search(event):
-    text = event.raw_text.strip()
-    
-    parts = text[7:].strip().split()
-    if not parts:
-        return await event.reply("فرمت اشتباهه. استفاده کن: `search? BTCUSDT 1h`", parse_mode='markdown')
+@client.on(events.NewMessage(pattern=r'(https?://(www\.)?instagram\.com/reel/[^ \n]+)'))
+async def handler(event):
+    url = re.search(r'(https?://(www\.)?instagram\.com/reel/[^ \n]+)', event.raw_text).group(1)
+    message = await event.reply("در حال دریافت اطلاعات...")
 
-    symbol = parts[0].upper()
-    timeframe = parts[1] if len(parts) > 1 else '1h'
+    temp_path = "downloaded.mp4"
 
     try:
-        file_path = await fetch_chart(symbol, timeframe)
+        # callback برای نمایش وضعیت پیشرفت دانلود
+        async def download_progress(downloaded, total):
+            bar = get_progress_bar(downloaded, total)
+            await message.edit(f"دانلود ویدیو...\n{bar}")
 
-        await client.send_file(
-            event.chat_id,
-            file=file_path,
-            caption=f"چارت {symbol} - تایم‌فریم {timeframe}",
-            reply_to=event.id
-        )
+        # اجرای تابع دانلود و نمایش پیشرفت
+        await download_instagram_video(url, save_as=temp_path, progress_callback=download_progress)
 
-        os.remove(file_path)
+        # callback برای وضعیت آپلود
+        async def upload_progress(current, total):
+            bar = get_progress_bar(current, total)
+            await message.edit(f"آپلود ویدیو...\n{bar}")
+
+        # ارسال فایل به کاربر با progress بار
+        async with client.action(event.chat_id, 'upload_video'):
+            await client.send_file(
+                event.chat_id,
+                file=temp_path,
+                reply_to=event.id,
+                progress_callback=upload_progress,
+                attributes=[DocumentAttributeVideo(duration=0, w=720, h=1280, supports_streaming=True)]
+            )
+
+        # حذف فایل موقتی بعد از ارسال
+        await message.delete()
+        os.remove(temp_path)
 
     except Exception as e:
-        if os.path.exists(file_path):
-            os.remove(file_path)
-        await event.reply(f"خطا: {str(e)}")
+        await message.edit(f"خطا در فرآیند: {e}")
 
 async def main():
     await client.start()
