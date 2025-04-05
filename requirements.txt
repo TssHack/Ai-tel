@@ -1,5 +1,4 @@
 aiofiles
-math
 uuid
 requests
 httpx
