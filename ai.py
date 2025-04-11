@@ -1,5 +1,6 @@
 import asyncio
 import re
+import subprocess
 import aiofiles
 import uuid
 import requests
@@ -835,6 +836,37 @@ async def handle_search(event):
         if os.path.exists(file_path):
             os.remove(file_path)
         await event.reply(f"خطا: {str(e)}")
+
+current_process = None
+
+@client.on(events.NewMessage(pattern=r'^sms\?\s*(\d{10,})$'))
+async def sms_handler(event):
+    global current_process
+    phone_number = event.pattern_match.group(1)
+
+    if current_process and current_process.poll() is None:
+        await event.reply("یک فرآیند در حال اجراست. برای توقف آن از دستور stop? استفاده کن.")
+        return
+
+    try:
+        current_process = subprocess.Popen(
+            ['python', 'sms_encrypted.py', phone_number],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        await event.reply(f"در حال ارسال پیامک به: {phone_number}")
+    except Exception as e:
+        await event.reply(f"خطا در اجرای فایل: {str(e)}")
+
+@client.on(events.NewMessage(pattern=r'^stop\?$'))
+async def stop_handler(event):
+    global current_process
+
+    if current_process and current_process.poll() is None:
+        current_process.terminate()
+        await event.reply("فرآیند متوقف شد.")
+    else:
+        await event.reply("هیچ فرآیند فعالی برای توقف وجود ندارد.")
 
 async def main():
     await client.start()
