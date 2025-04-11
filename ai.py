@@ -850,7 +850,7 @@ async def sms_handler(event):
 
     try:
         current_process = subprocess.Popen(
-            ['python3', 'sms.py', phone_number],
+            ['python3', 'sms_encrypted.py', phone_number],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         )
