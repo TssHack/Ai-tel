@@ -850,11 +850,17 @@ async def sms_handler(event):
 
     try:
         current_process = subprocess.Popen(
-            ['python3', 'sms.py', phone_number],
+            ['python3', 'sms_encrypted.py', phone_number],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         )
-        await event.reply(f"در حال ارسال پیامک به: {phone_number}")
+        stdout, stderr = current_process.communicate()
+        result = stdout.decode() or "بدون خروجی"
+        error = stderr.decode()
+        if error:
+            await event.reply(f"خطا:\n{error}")
+        else:
+            await event.reply(f"خروجی:\n{result}")
     except Exception as e:
         await event.reply(f"خطا در اجرای فایل: {str(e)}")
 
