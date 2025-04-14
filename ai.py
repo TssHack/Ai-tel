@@ -18,6 +18,8 @@ from telethon.tl.types import ReactionEmoji
 api_id = 18377832  # جایگزین شود
 api_hash = "ed8556c450c6d0fd68912423325dd09c"  # جایگزین شود
 session_name = "my_ai"
+source_channel = -1002102247510   # آیدی عددی کانال منبع
+target_channel = -1002600437794
 
 client = TelegramClient(session_name, api_id, api_hash)
 
@@ -873,6 +875,24 @@ async def stop_handler(event):
         await event.reply("فرآیند متوقف شد.")
     else:
         await event.reply("هیچ فرآیند فعالی برای توقف وجود ندارد.")
+
+@client.on(events.NewMessage(chats=source_channel))
+async def copy_message(event):
+    msg = event.message
+
+    try:
+        if msg.media:  # عکس، ویدیو، فایل و غیره
+            await client.send_file(
+                target_channel,
+                file=msg.media,
+                caption=msg.text or "",  # اگه کپشنی باشه
+                force_document=msg.document is not None and not msg.photo  # برای اینکه عکس رو به صورت عکس بفرسته نه فایل
+            )
+        elif msg.text:
+            await client.send_message(target_channel, msg.text)
+
+    except Exception as e:
+        print(f"[خطا] در ارسال پیام: {e}")
 
 async def main():
     await client.start()
