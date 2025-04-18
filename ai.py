@@ -928,28 +928,31 @@ async def copy_message(event):
     except Exception as e:
         print(f"[خطا] در ارسال پیام: {e}")
 
-@client.on(events.NewMessage(pattern='سخن بزرگان'))
+@client.on(events.NewMessage(pattern='^سخن بزرگان$'))
 async def send_random_quote(event):
     data = await get_random_quote()
-    image = create_quote_image(data['quote'], data['author'], data['developer'])
-    await client.send_file(event.chat_id, image, caption=f"«{data['quote']}»\n\n— {data['author']}")
+    message = format_quote(data['quote'], data['author'], data['developer'])
+    await event.respond(message, reply_to=event.message.id, parse_mode='markdown')
 
 @client.on(events.NewMessage(pattern=r'^سخن (.+)$'))
 async def send_quote_by_author(event):
     author_name = event.pattern_match.group(1)
     data = await get_quotes_by_author(author_name)
     if data:
-        image = create_quote_image(data['quote'], data['author'], data['developer'])
-        await client.send_file(event.chat_id, image, caption=f"«{data['quote']}»\n\n— {data['author']}")
+        message = format_quote(data['quote'], data['author'], data['developer'])
+        await event.respond(message, reply_to=event.message.id, parse_mode='markdown')
     else:
-        await event.reply("متاسفم، نویسنده‌ای با این نام پیدا نشد.")
+        await event.reply("❌ نویسنده‌ای با این نام پیدا نشد.", reply_to=event.message.id)
 
-@client.on(events.NewMessage(pattern='نویسندگان'))
+@client.on(events.NewMessage(pattern='^نویسندگان$'))
 async def send_authors_list(event):
     authors = await get_authors()
-    text = "**لیست نویسندگان موجود:**\n\n" + "\n".join(f"• {a}" for a in authors)
-    await event.respond(text)
-
+    header = "**لیست نویسندگان موجود:**\n"
+    chunks = [authors[i:i+30] for i in range(0, len(authors), 30)]
+    await event.respond(header, reply_to=event.message.id, parse_mode='markdown')
+    for chunk in chunks:
+        text = "\n".join(f"• {name}" for name in chunk)
+        await event.respond(text, reply_to=event.message.id)
 async def main():
     await client.start()
     print("🤖 ربات فعال شد!")
