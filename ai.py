@@ -934,7 +934,7 @@ async def send_random_quote(event):
     message = format_quote(data['quote'], data['author'], data['developer'])
     await event.respond(message, reply_to=event.message.id, parse_mode='markdown')
 
-@client.on(events.NewMessage(pattern=r'^سخن (.+)$'))
+@client.on(events.NewMessage(pattern=r'^سخن؟ (.+)$'))
 async def send_quote_by_author(event):
     author_name = event.pattern_match.group(1)
     data = await get_quotes_by_author(author_name)
