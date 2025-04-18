@@ -65,99 +65,15 @@ async def get_authors():
             data = await resp.json()
             return data.get('authors', [])
 
-def create_gradient_image(width, height, color_start, color_end):
-    base = Image.new('RGB', (width, height), color_start)
-    top = Image.new('RGB', (width, height), color_end)
-    mask = Image.new('L', (width, height))
-    mask_data = []
-    for y in range(height):
-        mask_data.extend([int(255 * (y / height))] * width)
-    mask.putdata(mask_data)
-    base.paste(top, (0, 0), mask)
-    return base
-
-def draw_centered_text(draw, text, font, y_start, content_x_start, content_width, fill='black', line_spacing=12, wrap_width=30):
-    lines = textwrap.wrap(text, width=wrap_width)
-    y = y_start
-    line_height_approx = font.getbbox("A")[3] - font.getbbox("A")[1]
-
-    for line in lines:
-        bbox = draw.textbbox((0, 0), line, font=font)
-        line_width = bbox[2] - bbox[0]
-        x = content_x_start + (content_width - line_width) // 2
-        draw.text((x, y), line, font=font, fill=fill)
-        y += line_height_approx + line_spacing
-    return y
-
-def create_quote_image(quote, author, developer):
-    width, height = 1080, 1080
-
-    # رنگ‌های هنری (گرادیان سبز پسته‌ای)
-    bg_color_start = '#e8f5e9'
-    bg_color_end = '#c8e6c9'
-    quote_color = '#4e342e'
-    author_color = '#6d4c41'
-    dev_color = '#8d6e63'
-    border_color = '#795548'
-    separator_color = '#bcaaa4'
-
-    padding = 80
-    border_width = 15
-
-    font_path = "fonts/Shabnam.ttf"
-    font_quote = ImageFont.truetype(font_path, 70)
-    font_author = ImageFont.truetype(font_path, 42)
-    font_dev = ImageFont.truetype(font_path, 22)
-
-    img = create_gradient_image(width, height, bg_color_start, bg_color_end)
-    draw = ImageDraw.Draw(img)
-
-    # قاب زیبا
-    draw.rectangle(
-        [(border_width // 2, border_width // 2),
-         (width - border_width // 2 - 1, height - border_width // 2 - 1)],
-        outline=border_color,
-        width=border_width
+def format_quote(quote, author, developer):
+    return (
+        f"✦ **سخن بزرگان** ✦\n\n"
+        f"❝ {quote} ❞\n\n"
+        f"— **{author}**\n"
+        f"──────\n"
+        f"`{developer['name']}` | {developer['Tel_ID']}"
     )
 
-    # ترسیم نقل‌قول
-    content_x_start = padding
-    content_width = width - 2 * padding
-    y_start_quote = height * 0.25
-
-    y_after_quote = draw_centered_text(
-        draw, quote, font_quote,
-        y_start=y_start_quote,
-        content_x_start=content_x_start,
-        content_width=content_width,
-        fill=quote_color,
-        line_spacing=28,
-        wrap_width=32
-    )
-
-    # خط جداکننده
-    line_y = y_after_quote + 25
-    line_length = content_width * 0.3
-    line_x_start = content_x_start + (content_width - line_length) // 2
-    draw.line([(line_x_start, line_y), (line_x_start + line_length, line_y)], fill=separator_color, width=3)
-
-    # نویسنده
-    author_text = f"— {author}"
-    bbox_author = draw.textbbox((0, 0), author_text, font=font_author)
-    author_x = content_x_start + (content_width - (bbox_author[2] - bbox_author[0])) // 2
-    draw.text((author_x, line_y + 25), author_text, font=font_author, fill=author_color)
-
-    # توسعه‌دهنده
-    dev_text = f"{developer['name']} | {developer['Tel_ID']}"
-    bbox_dev = draw.textbbox((0, 0), dev_text, font=font_dev)
-    dev_x = content_x_start + (content_width - (bbox_dev[2] - bbox_dev[0])) // 2
-    draw.text((dev_x, height - padding + 15), dev_text, font=font_dev, fill=dev_color)
-
-    # خروجی بایت
-    img_byte_arr = io.BytesIO()
-    img.save(img_byte_arr, format='PNG')
-    img_byte_arr.seek(0)
-    return img_byte_arr
 
 def get_estekhare():
     url = "https://stekhare.vercel.app/s"
