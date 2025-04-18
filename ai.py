@@ -42,7 +42,7 @@ licenses = [
 current_index = 0
 
 def get_estekhare():
-    url = "https://stekhare.onrender.com/s"
+    url = "https://stekhare.vercel.app/s"
     response = requests.get(url)
     try:
         data = response.json()
@@ -185,7 +185,7 @@ async def process_instagram_link(event, message: str, status_message):
         for attempt in range(2):  # دو بار تلاش
             try:
                 # استفاده از آدرس API برای دریافت لینک‌های رسانه‌ای
-                api_url = f"https://insta-ehsan.onrender.com/ehsan?url={message}"
+                api_url = f"https://insta-ehsan.vercel.app/ehsan?url={message}"
                 response = await http_client.get(api_url)
                 
                 # تبدیل پاسخ به JSON
@@ -239,7 +239,7 @@ async def process_instagram_link(event, message: str, status_message):
         for attempt in range(2):  # دو بار تلاش
             try:
                 # استفاده از آدرس API برای دریافت لینک‌های رسانه‌ای
-                api_url = f"https://insta-ehsan.onrender.com/ehsan?url={message}"
+                api_url = f"https://insta-ehsan.vercel.app/ehsan?url={message}"
                 response = await http_client.get(api_url)
                 
                 # تبدیل پاسخ به JSON
@@ -290,7 +290,7 @@ async def fetch_instagram_data(url):
     """ دریافت اطلاعات از API اینستاگرام """
     async with aiohttp.ClientSession() as session:
         try:
-            async with session.get(f"https://insta-ehsan.onrender.com/ehsan?url={url}") as response:
+            async with session.get(f"https://insta-ehsan.vercel.app/ehsan?url={url}") as response:
                 if response.status == 200:
                     return await response.json()
         except Exception as e:
