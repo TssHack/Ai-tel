@@ -6,6 +6,7 @@ import uuid
 import requests
 import random
 import httpx
+import io
 from datetime import datetime
 import aiohttp
 import os
