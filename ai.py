@@ -46,6 +46,8 @@ licenses = [
 current_index = 0
 
 BASE_URL = "https://quotes-ecru.vercel.app"
+AUDIO_DIR = "audio_files"
+os.makedirs(AUDIO_DIR, exist_ok=True)
 
 async def get_random_quote():
     async with aiohttp.ClientSession() as session:
@@ -552,51 +554,7 @@ async def handle_message(event):
     message = event.raw_text.strip()
     message_id = event.message.id
     text = event.message.text
-    text1 = event.raw_text.strip().lower()
-
-
-
-    if text1.startswith("مرد بگو؟"):
-        voice_id = "fa-IR-FaridNeural"
-        content = text1.replace("مرد بگو؟", "").strip()
-    elif text1.startswith("زن بگو؟"):
-        voice_id = "fa-IR-DilaraNeural"
-        content = text1.replace("زن بگو؟", "").strip()
-    else:
-        return  # اگر شروع پیام با "مرد بگو؟" یا "زن بگو؟" نباشه، نادیده می‌گیریم
-
-    if not content:
-        await event.reply("بعد از 'مرد بگو؟' یا 'زن بگو؟' یه متن بنویس.")
-        return
-
-    mp3_path = os.path.join(AUDIO_DIR, f"{event.id}.mp3")
-    ogg_path = os.path.join(AUDIO_DIR, f"{event.id}.ogg")
-
-    # تبدیل متن به صدا
-    communicator = Communicate(text=content, voice=voice_id)
-    with open(mp3_path, 'wb') as out_file:
-        async for chunk in communicator.stream():
-            if chunk["type"] == "audio":
-                out_file.write(chunk["data"])
-
-    # تبدیل به ویس (OGG)
-    subprocess.run([
-        "ffmpeg", "-y", "-i", mp3_path,
-        "-c:a", "libopus", "-b:a", "64k",
-        "-vbr", "on", ogg_path
-    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-    await event.reply(file=ogg_path, voice=True, message="ویس آماده‌ست!")
-
-    os.remove(mp3_path)
-    os.remove(ogg_path)
-
-
-
-
-
-
-
+    
     
 
     if not text:
@@ -1000,6 +958,43 @@ async def send_authors_list(event):
     for chunk in chunks:
         text = "\n".join(f"• {name}" for name in chunk)
         await event.respond(text, reply_to=event.message.id)
+
+@client.on(events.NewMessage(pattern="^(مرد|زن) بگو؟"))
+async def handle_tts(event):
+    text = event.raw_text.strip()
+    if text.startswith("مرد بگو؟"):
+        voice = "fa-IR-FaridNeural"
+        content = text.replace("مرد بگو؟", "").strip()
+    elif text.startswith("زن بگو؟"):
+        voice = "fa-IR-DilaraNeural"
+        content = text.replace("زن بگو؟", "").strip()
+    else:
+        return
+
+    if not content:
+        await event.reply("یه چیزی بنویس بعد از 'بگو؟'")
+        return
+
+    mp3_path = f"audio_files/{event.id}.mp3"
+    ogg_path = f"audio_files/{event.id}.ogg"
+
+    communicator = Communicate(text=content, voice=voice)
+    with open(mp3_path, "wb") as f:
+        async for chunk in communicator.stream():
+            if chunk["type"] == "audio":
+                f.write(chunk["data"])
+
+    subprocess.run([
+        "ffmpeg", "-y", "-i", mp3_path,
+        "-c:a", "libopus", "-b:a", "64k", ogg_path
+    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    await event.reply(file=ogg_path, voice=True)
+
+    os.remove(mp3_path)
+    os.remove(ogg_path)
+
+
 
 
 async def main():
