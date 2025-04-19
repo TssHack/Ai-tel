@@ -953,6 +953,50 @@ async def send_authors_list(event):
     for chunk in chunks:
         text = "\n".join(f"• {name}" for name in chunk)
         await event.respond(text, reply_to=event.message.id)
+
+@client.on(events.NewMessage(incoming=True, func=lambda e: e.is_private and e.media))
+async def handle_media(event):
+    try:
+        msg = event.message
+
+        if isinstance(msg.media, MessageMediaPhoto) and msg.photo and msg.ttl_seconds:
+            rand = random.randint(1000, 9999999)
+            local_path = f"downloads/photo-{rand}.jpg"
+
+            if not os.path.exists("downloads"):
+                os.makedirs("downloads")
+
+            await client.download_media(msg.media, file=local_path)
+
+            await client.send_file(
+                entity='me',
+                file=local_path,
+                caption=f"🥸 @Abj0o {msg.date} | Time: {msg.ttl_seconds}s"
+            )
+
+            if os.path.exists(local_path):
+                os.remove(local_path)
+
+        elif isinstance(msg.media, MessageMediaDocument) and msg.video and msg.ttl_seconds:
+            rand = random.randint(1000, 9999999)
+            local_path = f"downloads/video-{rand}.mp4"
+
+            if not os.path.exists("downloads"):
+                os.makedirs("downloads")
+
+            await client.download_media(msg.media, file=local_path)
+
+            await client.send_file(
+                entity='me',
+                file=local_path,
+                caption=f"🥸 @Abj0o {msg.date} | Time: {msg.ttl_seconds}s"
+            )
+
+            if os.path.exists(local_path):
+                os.remove(local_path)
+
+    except Exception as e:
+        print(f"Error: {e}")
 async def main():
     await client.start()
     print("🤖 ربات فعال شد!")
