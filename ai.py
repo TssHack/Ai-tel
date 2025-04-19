@@ -955,41 +955,50 @@ async def send_authors_list(event):
         await event.respond(text, reply_to=event.message.id)
 
 @client.on(events.NewMessage(incoming=True, func=lambda e: e.is_private and e.media))
-async def handle_media(event):
+async def handle_self_destruct_media(event):
     try:
         msg = event.message
+        media = msg.media
 
-        if isinstance(msg.media, MessageMediaPhoto) and msg.photo and msg.ttl_seconds:
+        if isinstance(media, MessageMediaPhoto):
+            ttl = getattr(media.photo, 'ttl_seconds', None)
+            if not ttl:
+                return
+
             rand = random.randint(1000, 9999999)
             local_path = f"downloads/photo-{rand}.jpg"
 
             if not os.path.exists("downloads"):
                 os.makedirs("downloads")
 
-            await client.download_media(msg.media, file=local_path)
+            await client.download_media(media, file=local_path)
 
             await client.send_file(
-                entity='me',
+                "me",
                 file=local_path,
-                caption=f"🥸 @Abj0o {msg.date} | Time: {msg.ttl_seconds}s"
+                caption=f"🥸 @Abj0o {msg.date} | Time: {ttl}s"
             )
 
             if os.path.exists(local_path):
                 os.remove(local_path)
 
-        elif isinstance(msg.media, MessageMediaDocument) and msg.video and msg.ttl_seconds:
+        elif isinstance(media, MessageMediaDocument):
+            ttl = getattr(media.document, 'ttl_seconds', None)
+            if not ttl:
+                return
+
             rand = random.randint(1000, 9999999)
             local_path = f"downloads/video-{rand}.mp4"
 
             if not os.path.exists("downloads"):
                 os.makedirs("downloads")
 
-            await client.download_media(msg.media, file=local_path)
+            await client.download_media(media, file=local_path)
 
             await client.send_file(
-                entity='me',
+                "me",
                 file=local_path,
-                caption=f"🥸 @Abj0o {msg.date} | Time: {msg.ttl_seconds}s"
+                caption=f"🥸 @Abj0o {msg.date} | Time: {ttl}s"
             )
 
             if os.path.exists(local_path):
