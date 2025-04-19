@@ -989,7 +989,7 @@ async def handle_tts(event):
         "-c:a", "libopus", "-b:a", "64k", ogg_path
     ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-    await event.reply(file=ogg_path, voice=True)
+    await event.respond(file=ogg_path, voice_note=True)
 
     os.remove(mp3_path)
     os.remove(ogg_path)
