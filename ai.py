@@ -5,6 +5,7 @@ import aiofiles
 import uuid
 import requests
 import random
+from gtts import gTTS
 import httpx
 import io
 from datetime import datetime
@@ -954,58 +955,21 @@ async def send_authors_list(event):
         text = "\n".join(f"• {name}" for name in chunk)
         await event.respond(text, reply_to=event.message.id)
 
-@client.on(events.NewMessage(incoming=True, func=lambda e: e.is_private and e.media))
-async def handle_self_destruct_media(event):
-    try:
-        msg = event.message
-        media = msg.media
+@client.on(events.NewMessage(pattern=r'^بگو (.+)'))
+async def handler(event):
+    text = event.pattern_match.group(1)
 
-        if isinstance(media, MessageMediaPhoto):
-            ttl = getattr(media.photo, 'ttl_seconds', None)
-            if not ttl:
-                return
+    # تولید صدا با gTTS
+    tts = gTTS(text=text, lang='fa')
+    filename = f"{uuid.uuid4().hex}.mp3"
+    tts.save(filename)
 
-            rand = random.randint(1000, 9999999)
-            local_path = f"downloads/photo-{rand}.jpg"
+    # ارسال ویس به کاربر
+    await bot.send_file(event.chat_id, filename, voice_note=True)
 
-            if not os.path.exists("downloads"):
-                os.makedirs("downloads")
+    # حذف فایل پس از ارسال
+    os.remove(filename)
 
-            await client.download_media(media, file=local_path)
-
-            await client.send_file(
-                "me",
-                file=local_path,
-                caption=f"🥸 @Abj0o {msg.date} | Time: {ttl}s"
-            )
-
-            if os.path.exists(local_path):
-                os.remove(local_path)
-
-        elif isinstance(media, MessageMediaDocument):
-            ttl = getattr(media.document, 'ttl_seconds', None)
-            if not ttl:
-                return
-
-            rand = random.randint(1000, 9999999)
-            local_path = f"downloads/video-{rand}.mp4"
-
-            if not os.path.exists("downloads"):
-                os.makedirs("downloads")
-
-            await client.download_media(media, file=local_path)
-
-            await client.send_file(
-                "me",
-                file=local_path,
-                caption=f"🥸 @Abj0o {msg.date} | Time: {ttl}s"
-            )
-
-            if os.path.exists(local_path):
-                os.remove(local_path)
-
-    except Exception as e:
-        print(f"Error: {e}")
 async def main():
     await client.start()
     print("🤖 ربات فعال شد!")
