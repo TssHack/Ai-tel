@@ -52,7 +52,7 @@ os.makedirs(AUDIO_DIR, exist_ok=True)
 
 stability_api_key = 'sk-1ZkFKyi1AUBCX71ve99y5ALxpCeMPZWsuTvIIwIbNx6YMX0V'
 
-async def image_to_custom_style(image_bytes, prompt):
+async def image_to_ghibli(image_bytes, prompt):
     url = "https://api.stability.ai/v1/generation/stable-diffusion-v1-6/image-to-image"
 
     headers = {
