@@ -1,6 +1,7 @@
 import asyncio
 import re
 import subprocess
+import base64
 import aiofiles
 import uuid
 import requests
