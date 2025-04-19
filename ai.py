@@ -52,37 +52,35 @@ os.makedirs(AUDIO_DIR, exist_ok=True)
 
 stability_api_key = 'sk-1ZkFKyi1AUBCX71ve99y5ALxpCeMPZWsuTvIIwIbNx6YMX0V'
 
-async def image_to_ghibli(image_bytes):
-    base64_image = base64.b64encode(image_bytes).decode('utf-8')
+async def image_to_custom_style(image_bytes, prompt):
+    url = "https://api.stability.ai/v1/generation/stable-diffusion-v1-6/image-to-image"
 
     headers = {
         "Authorization": f"Bearer {stability_api_key}",
-        "Content-Type": "application/json",
         "Accept": "application/json"
     }
 
-    payload = {
-        "init_image_mode": "IMAGE_STRENGTH",
-        "image_strength": 0.6,
-        "init_image": base64_image,
-        "text_prompts": [
-            {"text": "in the style of Studio Ghibli, anime, soft dreamy colors"}
-        ],
-        "cfg_scale": 7,
-        "samples": 1,
-        "steps": 30
+    files = {
+        "init_image": ("input.png", io.BytesIO(image_bytes), "image/png"),
     }
 
-    url = "https://api.stability.ai/v1/generation/stable-diffusion-v1-6/image-to-image"
+    data = {
+        "image_strength": 0.6,
+        "cfg_scale": 7,
+        "samples": 1,
+        "steps": 30,
+        "text_prompts[0][text]": prompt,
+        "text_prompts[0][weight]": 1
+    }
 
-    res = requests.post(url, headers=headers, json=payload)
-    if res.status_code != 200:
-        raise Exception(f"Error: {res.text}")
+    response = requests.post(url, headers=headers, files=files, data=data)
 
-    result = res.json()
-    image_b64 = result['artifacts'][0]['base64']
+    if response.status_code != 200:
+        raise Exception(f"Error: {response.text}")
+
+    image_b64 = response.json()["artifacts"][0]["base64"]
     return base64.b64decode(image_b64)
-
+    
 async def get_random_quote():
     async with aiohttp.ClientSession() as session:
         async with session.get(f"{BASE_URL}/ehsan") as resp:
