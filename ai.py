@@ -552,7 +552,7 @@ async def handle_message(event):
     message = event.raw_text.strip()
     message_id = event.message.id
     text = event.message.text
-    text1 = event.raw_text.strip().lower(
+    text1 = event.raw_text.strip().lower()
 
 
 
@@ -1001,20 +1001,6 @@ async def send_authors_list(event):
         text = "\n".join(f"• {name}" for name in chunk)
         await event.respond(text, reply_to=event.message.id)
 
-@client.on(events.NewMessage(pattern=r'^بگو (.+)'))
-async def handler(event):
-    text = event.pattern_match.group(1)
-
-    # تولید صدا با gTTS
-    tts = gTTS(text=text, lang='fa')
-    filename = f"{uuid.uuid4().hex}.mp3"
-    tts.save(filename)
-
-    # ارسال ویس به کاربر
-    await bot.send_file(event.chat_id, filename, voice_note=True)
-
-    # حذف فایل پس از ارسال
-    os.remove(filename)
 
 async def main():
     await client.start()
