@@ -49,6 +49,39 @@ BASE_URL = "https://quotes-ecru.vercel.app"
 AUDIO_DIR = "audio_files"
 os.makedirs(AUDIO_DIR, exist_ok=True)
 
+stability_api_key = 'sk-1ZkFKyi1AUBCX71ve99y5ALxpCeMPZWsuTvIIwIbNx6YMX0V'
+
+async def image_to_ghibli(image_bytes):
+    base64_image = base64.b64encode(image_bytes).decode('utf-8')
+
+    headers = {
+        "Authorization": f"Bearer {stability_api_key}",
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+    }
+
+    payload = {
+        "init_image_mode": "IMAGE_STRENGTH",
+        "image_strength": 0.6,
+        "init_image": base64_image,
+        "text_prompts": [
+            {"text": "in the style of Studio Ghibli, anime, soft dreamy colors"}
+        ],
+        "cfg_scale": 7,
+        "samples": 1,
+        "steps": 30
+    }
+
+    url = "https://api.stability.ai/v1/generation/stable-diffusion-v1-6/image-to-image"
+
+    res = requests.post(url, headers=headers, json=payload)
+    if res.status_code != 200:
+        raise Exception(f"Error: {res.text}")
+
+    result = res.json()
+    image_b64 = result['artifacts'][0]['base64']
+    return base64.b64decode(image_b64)
+
 async def get_random_quote():
     async with aiohttp.ClientSession() as session:
         async with session.get(f"{BASE_URL}/ehsan") as resp:
@@ -998,6 +1031,29 @@ async def handle_tts(event):
 
     os.remove(mp3_path)
     os.remove(ogg_path)
+
+@client.on(events.NewMessage(pattern=r"^Ghibli$", func=lambda e: e.is_reply))
+async def handle_ghibli(event):
+    reply_msg = await event.get_reply_message()
+
+    if not reply_msg or not reply_msg.media:
+        await event.reply("لطفاً روی یک تصویر ریپلای بزنید.")
+        return
+
+    try:
+        img = await reply_msg.download_media(bytes)
+        await event.reply("در حال تبدیل تصویر به سبک جیبیلی... لطفاً صبر کنید.")
+
+        ghibli_img = await image_to_ghibli(img)
+
+        file_name = "ghibli.png"
+        with open(file_name, "wb") as f:
+            f.write(ghibli_img)
+
+        await event.reply(file=file_name)
+        os.remove(file_name)
+    except Exception as e:
+        await event.reply(f"خطا: {e}")
 
 
 
