@@ -15,7 +15,7 @@ import textwrap
 from io import BytesIO
 from telethon import TelegramClient, events
 from telethon.tl.functions.messages import SendReactionRequest
-from telethon.tl.types import ReactionEmoji
+from telethon.tl.types import MessageMediaPhoto, MessageMediaDocument
 
 # اطلاعات ورود به حساب تلگرام
 api_id = 18377832  # جایگزین شود
