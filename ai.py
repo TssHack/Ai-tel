@@ -50,36 +50,6 @@ BASE_URL = "https://quotes-ecru.vercel.app"
 AUDIO_DIR = "audio_files"
 os.makedirs(AUDIO_DIR, exist_ok=True)
 
-stability_api_key = 'sk-1ZkFKyi1AUBCX71ve99y5ALxpCeMPZWsuTvIIwIbNx6YMX0V'
-
-async def image_to_ghibli(image_bytes, prompt):
-    url = "https://api.stability.ai/v1/generation/stable-diffusion-v1-6/image-to-image"
-
-    headers = {
-        "Authorization": f"Bearer {stability_api_key}",
-        "Accept": "application/json"
-    }
-
-    files = {
-        "init_image": ("input.png", io.BytesIO(image_bytes), "image/png"),
-    }
-
-    data = {
-        "image_strength": 0.6,
-        "cfg_scale": 7,
-        "samples": 1,
-        "steps": 30,
-        "text_prompts[0][text]": prompt,
-        "text_prompts[0][weight]": 1
-    }
-
-    response = requests.post(url, headers=headers, files=files, data=data)
-
-    if response.status_code != 200:
-        raise Exception(f"Error: {response.text}")
-
-    image_b64 = response.json()["artifacts"][0]["base64"]
-    return base64.b64decode(image_b64)
     
 async def get_random_quote():
     async with aiohttp.ClientSession() as session:
@@ -1031,30 +1001,64 @@ async def handle_tts(event):
     os.remove(mp3_path)
     os.remove(ogg_path)
 
-@client.on(events.NewMessage(pattern=r"^Ghibli$", func=lambda e: e.is_reply))
-async def handle_ghibli(event):
-    reply_msg = await event.get_reply_message()
+@client.on(events.NewMessage(pattern="^هوش؟"))
+async def handle_ai_tts(event):
+    text = event.raw_text.strip()
+    content = text.replace("هوش؟", "").strip()
 
-    if not reply_msg or not reply_msg.media:
-        await event.reply("لطفاً روی یک تصویر ریپلای بزنید.")
+    if not content:
+        await event.reply("یه چیزی بنویس بعد از 'هوش؟'")
         return
 
+    # ساخت URL درخواست به API
+    api_url = f"https://api-ehsan-gpt4.vercel.app/ehsan/g"
+    params = {
+        "q": content,
+        "userId": str(event.sender_id),
+        "network": "true",
+        "withoutContext": "false",
+        "stream": "false",  # چون stream true بود، اگه لازم شد می‌تونیم تغییرش بدیم
+        "license": "g9s7B3lPZVXN3k2hD2fWgRzOq67d2XKZbgcnqVQ4Ksgg"
+    }
+
     try:
-        img = await reply_msg.download_media(bytes)
-        await event.reply("در حال تبدیل تصویر به سبک جیبیلی... لطفاً صبر کنید.")
-
-        ghibli_img = await image_to_ghibli(img)
-
-        file_name = "ghibli.png"
-        with open(file_name, "wb") as f:
-            f.write(ghibli_img)
-
-        await event.reply(file=file_name)
-        os.remove(file_name)
+        async with aiohttp.ClientSession() as session:
+            async with session.get(api_url, params=params) as resp:
+                data = await resp.json()
+                ai_response = data.get("response", "")
     except Exception as e:
-        await event.reply(f"خطا: {e}")
+        await event.reply("خطا در اتصال به هوش مصنوعی")
+        return
 
+    if not ai_response:
+        await event.reply("پاسخی دریافت نشد")
+        return
 
+    # تبدیل پاسخ به صدا
+    voice = "fa-IR-DilaraNeural"  # یا انتخاب تصادفی بین زن/مرد
+    mp3_path = f"audio_files/{event.id}.mp3"
+    ogg_path = f"audio_files/{event.id}.ogg"
+
+    communicator = Communicate(text=ai_response, voice=voice)
+    with open(mp3_path, "wb") as f:
+        async for chunk in communicator.stream():
+            if chunk["type"] == "audio":
+                f.write(chunk["data"])
+
+    subprocess.run([
+        "ffmpeg", "-y", "-i", mp3_path,
+        "-c:a", "libopus", "-b:a", "64k", ogg_path
+    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    await client.send_file(
+        event.chat_id,
+        file=ogg_path,
+        voice_note=True,
+        reply_to=event.id
+    )
+
+    os.remove(mp3_path)
+    os.remove(ogg_path)
 
 
 async def main():
