@@ -1060,6 +1060,88 @@ async def handle_ai_tts(event):
     os.remove(mp3_path)
     os.remove(ogg_path)
 
+@client.on(events.NewMessage(pattern="^ویس؟"))
+async def handle_voice_ai(event):
+    reply = await event.get_reply_message()
+    
+    if not reply or not reply.voice:
+        await event.reply("باید روی ویس ریپلای کنی!")
+        return
+
+    # دانلود ویس
+    ogg_path = f"audio_files/{event.id}_input.ogg"
+    wav_path = f"audio_files/{event.id}_input.wav"
+
+    await reply.download_media(file=ogg_path)
+
+    # تبدیل به wav برای STT
+    subprocess.run([
+        "ffmpeg", "-y", "-i", ogg_path, "-ar", "16000", "-ac", "1", wav_path
+    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    # تبدیل ویس به متن با whisper یا faster-whisper
+    import whisper
+    model = whisper.load_model("base")  # یا tiny برای سبک‌تر بودن
+
+    result = model.transcribe(wav_path)
+    transcribed_text = result["text"].strip()
+
+    if not transcribed_text:
+        await event.reply("نتونستم صداتو تشخیص بدم!")
+        return
+
+    # ارسال متن به API هوش مصنوعی
+    api_url = "https://api-ehsan-gpt4.vercel.app/ehsan/g"
+    params = {
+        "q": transcribed_text,
+        "userId": str(event.sender_id),
+        "network": "true",
+        "withoutContext": "false",
+        "stream": "false",
+        "license": "g9s7B3lPZVXN3k2hD2fWgRzOq67d2XKZbgcnqVQ4Ksgg"
+    }
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(api_url, params=params) as resp:
+                data = await resp.json()
+                ai_response = data.get("response", "")
+    except:
+        await event.reply("ارتباط با هوش مصنوعی برقرار نشد")
+        return
+
+    if not ai_response:
+        await event.reply("پاسخی دریافت نشد")
+        return
+
+    # تبدیل پاسخ به صدا
+    voice = "fa-IR-DilaraNeural"
+    mp3_path = f"audio_files/{event.id}_output.mp3"
+    ogg_out_path = f"audio_files/{event.id}_output.ogg"
+
+    communicator = Communicate(text=ai_response, voice=voice)
+    with open(mp3_path, "wb") as f:
+        async for chunk in communicator.stream():
+            if chunk["type"] == "audio":
+                f.write(chunk["data"])
+
+    subprocess.run([
+        "ffmpeg", "-y", "-i", mp3_path,
+        "-c:a", "libopus", "-b:a", "64k", ogg_out_path
+    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    await client.send_file(
+        event.chat_id,
+        file=ogg_out_path,
+        voice_note=True,
+        reply_to=event.id
+    )
+
+    # پاکسازی فایل‌ها
+    for f in [ogg_path, wav_path, mp3_path, ogg_out_path]:
+        if os.path.exists(f):
+            os.remove(f)
+
 
 async def main():
     await client.start()
