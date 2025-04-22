@@ -1142,6 +1142,26 @@ async def handle_voice_ai(event):
         if os.path.exists(f):
             os.remove(f)
 
+@client.on(events.NewMessage(pattern=r'^تصویر\؟ (.+)$'))
+async def handler(event):
+    prompt = event.pattern_match.group(1)
+    api_url = 'https://ai-img-ehsan.vercel.app/'
+
+    try:
+        status_msg = await event.reply("در حال تولید تصویر...")
+
+        # ارسال درخواست POST به API
+        response = requests.post(api_url, json={"prompt": prompt})
+
+        if response.status_code == 200:
+            image_bytes = BytesIO(response.content)
+            image_bytes.name = "image.jpg"
+            await event.reply(file=image_bytes, reply_to=event.id)
+        else:
+            await event.reply(f"خطا در دریافت تصویر از API. کد وضعیت: {response.status_code}", reply_to=event.id)
+
+    except Exception as e:
+        await event.reply(f"خطا: {str(e)}", reply_to=event.id)
 
 async def main():
     await client.start()
