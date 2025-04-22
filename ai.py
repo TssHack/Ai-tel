@@ -1157,8 +1157,12 @@ async def handler(event):
                 image_bytes.name = "image.jpg"
                 image_bytes.seek(0)
 
-                # ویرایش پیام اولیه و جایگزین کردن آن با تصویر
-                await client.edit_message(event.chat_id, status_msg.id, file=image_bytes)
+                await client.edit_message(
+                    event.chat_id,
+                    status_msg.id,
+                    file=image_bytes,
+                    message="تصویر با موفقیت ایجاد شد."
+                )
 
         else:
             await status_msg.edit(f"خطا در دریافت تصویر از API. کد وضعیت: {response.status_code}")
