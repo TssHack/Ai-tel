@@ -1150,19 +1150,22 @@ async def handler(event):
     try:
         status_msg = await event.reply("در حال تولید تصویر...")
 
-        # ارسال درخواست POST به API
         response = requests.post(api_url, json={"prompt": prompt})
 
         if response.status_code == 200:
-            image_bytes = BytesIO(response.content)
-            image_bytes.name = "image.jpg"
-            await event.reply(file=image_bytes, reply_to=event.id)
+            with BytesIO(response.content) as image_bytes:
+                image_bytes.name = "image.jpg"
+                image_bytes.seek(0)
+
+                # ویرایش پیام اولیه و جایگزین کردن آن با تصویر
+                await client.edit_message(event.chat_id, status_msg.id, file=image_bytes)
+
         else:
-            await event.reply(f"خطا در دریافت تصویر از API. کد وضعیت: {response.status_code}", reply_to=event.id)
+            await status_msg.edit(f"خطا در دریافت تصویر از API. کد وضعیت: {response.status_code}")
 
     except Exception as e:
-        await event.reply(f"خطا: {str(e)}", reply_to=event.id)
-
+        await status_msg.edit(f"خطا: {str(e)}")
+        
 async def main():
     await client.start()
     print("🤖 ربات فعال شد!")
