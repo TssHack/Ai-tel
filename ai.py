@@ -1161,7 +1161,7 @@ async def handler(event):
                     event.chat_id,
                     status_msg.id,
                     file=image_bytes,
-                    message="تصویر با موفقیت ایجاد شد."
+                    text="تصویر با موفقیت ایجاد شد."
                 )
 
         else:
