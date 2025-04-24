@@ -556,6 +556,70 @@ async def handle_message(event):
     message = event.raw_text.strip()
     message_id = event.message.id
     text = event.message.text
+    text1 = event.raw_text
+    chat = event.chat_id
+    msg_id = event.id
+
+
+
+    if text1.startswith(".tas"):
+        try:
+            target = int(text1.split()[1])
+            if 0 < target < 7:
+                await client(DeleteMessagesRequest(chat_id=chat, id=[msg_id]))
+                while True:
+                    dice = await client(SendDiceRequest(peer=chat, emoji="🎲"))
+                    if dice.msg.dice.value != target:
+                        await client(DeleteMessagesRequest(chat_id=chat, id=[dice.msg.id]))
+                    else:
+                        break
+            else:
+                await event.reply("Please Send A Number Between 1 To 6")
+        except:
+            await event.reply("Wrong format. Use: `.tas 4`")
+
+    elif text.startswith(".dart"):
+        await client(DeleteMessagesRequest(chat_id=chat, id=[msg_id]))
+        while True:
+            dice = await client(SendDiceRequest(peer=chat, emoji="🎯"))
+            if dice.msg.dice.value != 6:
+                await client(DeleteMessagesRequest(chat_id=chat, id=[dice.msg.id]))
+            else:
+                break
+
+    elif text1.startswith(".bowling"):
+        await client(DeleteMessagesRequest(chat_id=chat, id=[msg_id]))
+        while True:
+            dice = await client(SendDiceRequest(peer=chat, emoji="🎳"))
+            if dice.msg.dice.value != 6:
+                await client(DeleteMessagesRequest(chat_id=chat, id=[dice.msg.id]))
+            else:
+                break
+
+    elif text1.startswith(".basketball"):
+        await client(DeleteMessagesRequest(chat_id=chat, id=[msg_id]))
+        while True:
+            dice = await client(SendDiceRequest(peer=chat, emoji="🏀"))
+            if dice.msg.dice.value != 4:
+                await client(DeleteMessagesRequest(chat_id=chat, id=[dice.msg.id]))
+            else:
+                break
+
+    elif text1.startswith(".football"):
+        try:
+            target = int(text1.split()[1])
+            if target in [1, 4]:
+                await client(DeleteMessagesRequest(chat_id=chat, id=[msg_id]))
+                while True:
+                    dice = await client(SendDiceRequest(peer=chat, emoji="⚽"))
+                    if dice.msg.dice.value != target:
+                        await client(DeleteMessagesRequest(chat_id=chat, id=[dice.msg.id]))
+                    else:
+                        break
+            else:
+                await event.reply("Please Send A Number Between 1 To 4")
+        except:
+            await event.reply("Wrong format. Use: `.football 1` or `.football 4`")
     
     
 
