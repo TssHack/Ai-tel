@@ -1042,7 +1042,6 @@ async def handle_tts(event):
         return
 
     mp3_path = f"audio_files/{event.id}.mp3"
-    ogg_path = f"audio_files/{event.id}.ogg"
 
     communicator = Communicate(text=content, voice=voice)
     with open(mp3_path, "wb") as f:
@@ -1050,20 +1049,15 @@ async def handle_tts(event):
             if chunk["type"] == "audio":
                 f.write(chunk["data"])
 
-    subprocess.run([
-        "ffmpeg", "-y", "-i", mp3_path,
-        "-c:a", "libopus", "-b:a", "64k", ogg_path
-    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
+    # مستقیماً ارسال mp3 به عنوان voice message
     await client.send_file(
         event.chat_id,
-        file=ogg_path,
+        file=mp3_path,
         voice_note=True,
         reply_to=event.id
     )
 
     os.remove(mp3_path)
-    os.remove(ogg_path)
 
 @client.on(events.NewMessage(pattern="^هوش؟"))
 async def handle_ai_tts(event):
