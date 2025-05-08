@@ -876,7 +876,6 @@ async def save_media_manual(event):
         if replied_message.media:
             file_path = await replied_message.download_media()
             await client.send_file("me", file_path, caption="📥 مدیا ذخیره شد.")
-            await event.reply("✅ مدیا با موفقیت در **سیو مسیج** ذخیره شد.")
         else:
             await event.reply("⚠️ لطفاً روی یک **مدیا** (عکس، ویدیو، فایل و...) ریپلای کنید.")
     else:
